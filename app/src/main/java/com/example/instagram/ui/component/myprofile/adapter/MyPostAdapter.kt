@@ -3,7 +3,6 @@ package com.example.instagram.ui.component.myprofile.adapter
 import android.content.Context
 import android.content.Intent
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
@@ -15,6 +14,7 @@ import com.bumptech.glide.Glide
 import com.example.instagram.R
 import com.example.instagram.data.model.Post
 import com.example.instagram.data.repository.AuthRepository
+import com.example.instagram.databinding.ItemMyPostBinding
 import com.example.instagram.ui.component.updatepost.UpdatePostActivity
 import com.example.instagram.ui.component.utils.IntentExtras
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +24,7 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.core.view.isEmpty
 
 
 class MyPostAdapter(
@@ -37,21 +38,21 @@ class MyPostAdapter(
     private val adapterScope = CoroutineScope(Dispatchers.IO)
 
 
-    class PostViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val username: TextView = view.findViewById(R.id.tv_username)
-        val caption: TextView = view.findViewById(R.id.tv_content)
-        val viewPager: ViewPager2 = view.findViewById(R.id.viewPager)
-        val imageAvatar: ImageView = view.findViewById(R.id.iv_avatar)
-        val tvCreateAt: TextView = view.findViewById(R.id.tv_createAt)
-        val tvTotalLike: TextView = view.findViewById(R.id.tv_total_like)
-        val toolbar: Toolbar = view.findViewById(R.id.tb_menu)
-        val imageLike: ImageView = view.findViewById(R.id.iv_like)
+    class PostViewHolder(binding: ItemMyPostBinding) : RecyclerView.ViewHolder(binding.root) {
+        val username: TextView = binding.tvUsername
+        val caption: TextView = binding.tvContent
+        val viewPager: ViewPager2 = binding.viewPager
+        val imageAvatar: ImageView = binding.ivAvatar
+        val tvCreateAt: TextView = binding.tvCreateAt
+        val tvTotalLike: TextView = binding.tvTotalLike
+        val toolbar: Toolbar = binding.tbMenu
+        val imageLike: ImageView = binding.ivLike
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_my_post, parent, false)
-        return PostViewHolder(view)
+        val binding = ItemMyPostBinding.inflate(
+            LayoutInflater.from(parent.context),parent,false)
+        return PostViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: PostViewHolder, position: Int) {
@@ -111,12 +112,13 @@ class MyPostAdapter(
         }
 
 
-        if (holder.toolbar.menu.size() == 0) {
+        if (holder.toolbar.menu.isEmpty()) {
             holder.toolbar.inflateMenu(R.menu.menu_item)
         }
 
         holder.toolbar.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
+                /// xoa bai viet
                 R.id.menu_delete_post -> {
 
                     val sharedPreferences =
@@ -147,8 +149,9 @@ class MyPostAdapter(
                     true
                 }
 
-                R.id.menu_edit_post -> {
 
+                /// chinh sua bai viet
+                R.id.menu_edit_post -> {
                     val intent = Intent(context, UpdatePostActivity::class.java).apply {
                         putStringArrayListExtra(
                             IntentExtras.EXTRA_POST_IMAGE,

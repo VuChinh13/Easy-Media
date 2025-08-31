@@ -34,6 +34,9 @@
         <activity
             android:name=".ui.component.auth.AuthActivity"
             android:exported="true" />
+        <activity
+            android:name=".ui.component.updatepost.UpdatePostActivity"
+            android:exported="true" />
     </application>
 
 </manifest>

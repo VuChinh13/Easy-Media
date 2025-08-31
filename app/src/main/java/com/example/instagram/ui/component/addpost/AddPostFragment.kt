@@ -11,9 +11,13 @@ import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import com.example.instagram.databinding.FragmentAddPostBinding
 import com.example.instagram.ui.component.main.MainActivity
+import com.example.instagram.ui.component.utils.AppToast
 import com.example.instagram.ui.component.utils.SharedPrefer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
@@ -74,16 +78,17 @@ class AddPostFragment : Fragment() {
                 .show()
         }
 
+
         binding.btShare.setOnClickListener {
             if (binding.etContent.text.isEmpty()) {
-                Toast.makeText(requireContext(), "Hãy nhập nội dung bài viết", Toast.LENGTH_SHORT)
-                    .show()
+                AppToast.show(requireContext(),"Hãy nhập nội dung bài viết")
             } else {
                 SharedPrefer.updateContext(requireContext())
                 val userId = SharedPrefer.getUserId()
                 addPostViewModel.addPost(userId, binding.etContent.text.toString(), postImages)
             }
         }
+
     }
 
     private fun uriToFile(context: Context, uri: Uri): File {

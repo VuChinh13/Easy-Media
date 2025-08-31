@@ -33,6 +33,7 @@ class AuthActivity : AppCompatActivity() {
             )
         }
 
+        
         authViewModel.errorMessage.observe(this) { errorMessage ->
             Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
         }

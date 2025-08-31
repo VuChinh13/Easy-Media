@@ -18,6 +18,7 @@ import com.example.instagram.data.model.Post
 import com.example.instagram.data.repository.AuthRepository
 import com.example.instagram.databinding.ItemFirstPostBinding
 import com.example.instagram.databinding.ItemPostBinding
+import com.example.instagram.ui.component.utils.AppToast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -152,7 +153,7 @@ class PostAdapter(
                             holder.tvTotalLike.text = post.totalLike.toString()
                             Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "Đã có lỗi xảy ra", Toast.LENGTH_SHORT).show()
+                            AppToast.show(context,"Đã có lỗi xảy ra")
                         }
                     }
                 } else {
@@ -165,7 +166,7 @@ class PostAdapter(
                             holder.tvTotalLike.text = post.totalLike.toString()
                             Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "Đã có lỗi xảy ra", Toast.LENGTH_SHORT).show()
+                            AppToast.show(context,"Đã có lỗi xảy ra")
                         }
                     }
                 }
@@ -201,7 +202,7 @@ class PostAdapter(
                             holder.tvTotalLike.text = post.totalLike.toString()
                             Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "Đã có lỗi xảy ra", Toast.LENGTH_SHORT).show()
+                            AppToast.show(context,"Đã có lỗi xảy ra")
                         }
                     }
                 } else {
@@ -214,7 +215,7 @@ class PostAdapter(
                             holder.tvTotalLike.text = post.totalLike.toString()
                             Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "Đã có lỗi xảy ra", Toast.LENGTH_SHORT).show()
+                            AppToast.show(context,"Đã có lỗi xảy ra")
                         }
                     }
                 }

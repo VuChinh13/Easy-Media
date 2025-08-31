@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.example.instagram.databinding.ActivityUpdatePostBinding
 import com.example.instagram.ui.component.utils.IntentExtras
+import com.example.instagram.ui.component.utils.SharedPrefer
 import java.io.File
 import java.io.FileOutputStream
 
@@ -54,8 +55,8 @@ class UpdatePostActivity : AppCompatActivity() {
             } else Toast.makeText(this, "Đã xảy ra lỗi hãy kiểm tra lại", Toast.LENGTH_SHORT).show()
         }
         binding.btSave.setOnClickListener {
-            val sharedPreferences = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE)
-            val userId = sharedPreferences.getString("_id", "") ?: ""
+           SharedPrefer.updateContext(this)
+            val userId = SharedPrefer.getUserId()
             updatePostViewModel.updatePost(
                 userId,
                 postId,
