@@ -21,7 +21,7 @@ object SharedPrefer {
         this.context = context.applicationContext
     }
 
-    fun getUserId(): String {
+    fun getId(): String {
         return getSharedPrefer().getString("_id", "") ?: ""
     }
 
@@ -29,28 +29,24 @@ object SharedPrefer {
         return getSharedPrefer().getString("username", "") ?: ""
     }
 
-    fun getName(): String {
-        return getSharedPrefer().getString("name", "") ?: ""
+    fun getFullName(): String {
+        return getSharedPrefer().getString("fullname", "") ?: ""
     }
 
-    fun getAvatar(): String {
-        return getSharedPrefer().getString("avatar", "") ?: ""
+    fun getProfilePicture(): String {
+        return getSharedPrefer().getString("profilepicture", "") ?: ""
     }
 
-    fun getPassword(): String {
-        return getSharedPrefer().getString("password", "") ?: ""
+    fun getEmail(): String {
+        return getSharedPrefer().getString("email", "") ?: ""
     }
 
-    fun getGender(): String {
-        return getSharedPrefer().getString("gender", "") ?: ""
+    fun getBio(): String {
+        return getSharedPrefer().getString("bio", "") ?: ""
     }
 
-    fun getAddress(): String {
-        return getSharedPrefer().getString("address", "") ?: ""
-    }
-
-    fun getIntroduce(): String {
-        return getSharedPrefer().getString("introduce", "") ?: ""
+    fun getLocation(): String {
+        return getSharedPrefer().getString("location", "") ?: ""
     }
 
     fun getSharedPrefer(): SharedPreferences {
@@ -60,23 +56,21 @@ object SharedPrefer {
     // lưu dữ liệu
     fun saveAllData(
         id: String,
-        username: String,
-        password: String,
-        name: String,
-        avatar: String,
-        gender: String,
-        address: String,
-        introduce: String
+        username: String?,
+        fullName: String?,
+        email: String?,
+        bio: String?,
+        location: String?,
+        profilePicture: String?
     ) {
         getSharedPrefer().edit {
             putString("_id", id)
             putString("username", username)
-            putString("password", password)
-            putString("name", name)
-            putString("avatar", avatar)
-            putString("gender", gender)
-            putString("address", address)
-            putString("introduce", introduce)
+            putString("fullname", fullName)
+            putString("email", email)
+            putString("bio", bio)
+            putString("location", location)
+            putString("profilepicture", profilePicture)
         }
     }
 
