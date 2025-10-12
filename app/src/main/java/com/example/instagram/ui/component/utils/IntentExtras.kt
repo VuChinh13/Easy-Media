@@ -1,8 +1,8 @@
 package com.example.instagram.ui.component.utils
 
-    /*
-     * Define const
-     */
+/*
+ * Định nghĩa các hằng số dùng cho Intent
+ */
 object IntentExtras {
     const val EXTRA_NAME = "extra_name"
     const val EXTRA_GENDER = "extra_gender"

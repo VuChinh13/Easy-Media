@@ -1,75 +1,59 @@
 package com.example.instagram.ui.component.home
 
+import android.util.Log
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.instagram.data.model.Author
-import com.example.instagram.data.model.PostResponse
+import com.example.instagram.data.data_source.cloudinary.CloudinaryServiceImpl
+import com.example.instagram.data.data_source.firebase.FirebaseAuthService
+import com.example.instagram.data.data_source.firebase.FirebasePostService
+import com.example.instagram.data.model.Post
+import com.example.instagram.data.model.User
 import com.example.instagram.data.repository.AuthRepository
+import com.example.instagram.data.repository.AuthRepositoryImpl
+import com.example.instagram.data.repository.PostRepository
+import com.example.instagram.data.repository.PostRepositoryImpl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
- *  Trong class có 2 phương thức là getPost() và getPost1()
- *  phương thức getPost1() dùng để lấy danh sách dữ liệu vì
- *  không có api lấy dữ liệu người dùng
- *  phương thức getPost() là lấy những bài viết
- *
- * -Dùng MediatorLiveData để kết hợp 2 LiveData khi mà cả 2 load xong dữ liệu
- *  thì mới cập nhật giao diện
- *
+ * lấy tất cả bài viết mà có trên firebase
+ * Dữ liệu khi mà trả về lên là Pair (chứa data và message)
  */
 class HomeViewModel : ViewModel() {
-    private val authRepository = AuthRepository()
-    private val _getPostResult = MutableLiveData<PostResponse?>()
-    val getPostResult: LiveData<PostResponse?> = _getPostResult
-    private val _getInforUserResults = MutableLiveData<MutableList<Author>>()
-    val getInforUserResults: LiveData<MutableList<Author>> = _getInforUserResults
-    public val combinedData = MediatorLiveData<Pair<PostResponse?, MutableList<Author>?>>()
 
-    init {
-        combinedData.addSource(getPostResult) { posts ->
-            val authors = _getInforUserResults.value
-            if (posts != null && authors != null) {
-                combinedData.value = posts to authors
-            }
-        }
+    private val repoPost: PostRepository =
+        PostRepositoryImpl(FirebasePostService(cloudinary = CloudinaryServiceImpl()))
+    private val repoAuth: AuthRepository = AuthRepositoryImpl(FirebaseAuthService())
+    private val _posts = MutableLiveData<Pair<List<Post>, String>>()
+    val posts: LiveData<Pair<List<Post>, String>> = _posts
 
-        combinedData.addSource(getInforUserResults) { authors ->
-            val posts = _getPostResult.value
-            if (posts != null && authors != null) {
-                combinedData.value = posts to authors
+    private val _user = MutableLiveData<User>()
+    val user: LiveData<User> = _user
+
+    // Lấy thông tin bài viết
+    fun getAllPost() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = repoPost.getAllPosts()
+            result.onSuccess { list ->
+                _posts.postValue(list to "")
+            }.onFailure { e ->
+                Log.d("Checknew", e.message.toString())
+                _posts.postValue(emptyList<Post>() to (e.message ?: "Đã có lỗi xảy ra"))
             }
         }
     }
 
-
-    fun getPost() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val totalPosts = authRepository.getPost("moi-nhat", 1, 10)?.data?.totalPost ?: 0
-            val result = authRepository.getPost("moi-nhat", 1, totalPosts)
-            _getPostResult.postValue(result)
-        }
-    }
-
-
-    fun getPost1() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val totalPosts = authRepository.getPost("moi-nhat", 1, 10)?.data?.totalPost ?: 0
-            val result = authRepository.getPost("moi-nhat", 1, totalPosts)
-            val inforUses = mutableListOf<Author>()
-            val usernames = mutableSetOf<String>()
-
-            result?.data?.data?.forEach { item ->
-                val author = item.author
-                if (author.username !in usernames) {
-                    inforUses.add(author)
-                    usernames.add(author.username)
+    // Lấy tất cả những người dùng của bài viết
+    fun getUserOfPost(listPost: List<Post>) {
+        viewModelScope.launch {
+            listPost.forEach {
+                val result = repoAuth.getUserById(it.userId)
+                result.onSuccess {
+                    _user.postValue(it)
                 }
             }
-            _getInforUserResults.postValue(inforUses)
         }
     }
 }

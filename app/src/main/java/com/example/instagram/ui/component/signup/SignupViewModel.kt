@@ -1,34 +1,52 @@
 package com.example.instagram.ui.component.signup
+
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.instagram.data.model.SignupResponse
+import com.example.instagram.data.data_source.firebase.FirebaseAuthService
 import com.example.instagram.data.repository.AuthRepository
+import com.example.instagram.data.repository.AuthRepositoryImpl
+import com.example.instagram.data.repository.AuthError
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class SignupViewModel : ViewModel() {
-    private val authRepository = AuthRepository()
-    private val _signupResult = MutableLiveData<SignupResponse?>()
-    val signResult: LiveData<SignupResponse?> = _signupResult
+class SignupViewModel(
+    private val repo: AuthRepository = AuthRepositoryImpl(FirebaseAuthService())
+) : ViewModel() {
 
-    private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> = _errorMessage
+    private val _signupResult = MutableLiveData<Pair<Boolean, String>>()
+    val signupResult: LiveData<Pair<Boolean, String>> = _signupResult
 
-    private fun validateInput(username: String, password: String, name: String): Boolean {
-        return if (username.isEmpty() || password.isEmpty() || name.isEmpty()) {
-            _errorMessage.postValue("Hãy nhập đầy đủ thông tin")
-            false
-        } else {
-            true
-        }
-    }
+    fun signup(
+        email: String,
+        password: String,
+        username: String,
+        fullName: String
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = repo.signup(
+                email = email,
+                password = password,
+                username = username,
+                fullName = fullName
+            )
+            result.onSuccess {
+                // it = uid
+                _signupResult.postValue(true to "Đăng ký thành công")
+            }.onFailure { e ->
+                val message = when (e) {
+                    is AuthError.UsernameTaken ->
+                        "Tên người dùng đã tồn tại, vui lòng chọn tên khác"
 
-    fun signup(username: String, password: String, name: String) {
-        if (!validateInput(username, password, name)) return
-        viewModelScope.launch {
-                val result = authRepository.signup(username, password, name)
-                _signupResult.postValue(result)
+                    is AuthError.Firebase ->
+                        e.message ?: "Đăng ký thất bại, vui lòng thử lại"
+
+                    else ->
+                        e.message ?: "Đăng ký thất bại, vui lòng kiểm tra lại thông tin"
+                }
+                _signupResult.postValue(false to message)
+            }
         }
     }
 }

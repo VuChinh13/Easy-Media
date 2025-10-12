@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:background="@color/white"
+    android:padding="10dp"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".ui.component.search.SearchFragment">
+
+<!--    <androidx.appcompat.widget.SearchView-->
+<!--        android:layout_marginTop="10dp"-->
+<!--        android:layout_marginRight="10dp"-->
+<!--        android:layout_marginLeft="10dp"-->
+<!--        android:id="@+id/searchView"-->
+<!--        app:layout_constraintTop_toTopOf="parent"-->
+<!--        app:layout_constraintRight_toRightOf="parent"-->
+<!--        app:layout_constraintLeft_toLeftOf="parent"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:background="@drawable/bg_search_view"-->
+<!--        android:layout_height="55dp"-->
+<!--        app:iconifiedByDefault="true"-->
+<!--        app:queryHint="Tìm kiếm..." />-->
+
+
+    <AutoCompleteTextView
+        android:id="@+id/actv_user"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:completionThreshold="1"
+        android:paddingLeft="10dp"
+        android:hint="Nhập tên người dùng"
+        android:textSize="15sp"
+        android:imeOptions="actionDone"
+        android:background="@drawable/bg_search_view"
+        android:inputType="textPersonName"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

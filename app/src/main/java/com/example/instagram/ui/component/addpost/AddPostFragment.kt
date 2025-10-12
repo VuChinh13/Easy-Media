@@ -3,21 +3,20 @@ package com.example.instagram.ui.component.addpost
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import com.example.instagram.databinding.FragmentAddPostBinding
 import com.example.instagram.ui.component.main.MainActivity
 import com.example.instagram.ui.component.utils.AppToast
 import com.example.instagram.ui.component.utils.SharedPrefer
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
@@ -60,8 +59,9 @@ class AddPostFragment : Fragment() {
             parentFragmentManager.popBackStack()
         }
 
-        addPostViewModel.getPostResponse.observe(viewLifecycleOwner) { result ->
-            if (result != null) {
+        addPostViewModel.result.observe(viewLifecycleOwner) { result ->
+            if (result.first) {
+                (activity as MainActivity).getBinding().loadingOverlay.visibility = View.GONE // ẩn sau khi xong
                 // Nếu mà thành công
                 Toast.makeText(
                     requireContext(),
@@ -70,25 +70,53 @@ class AddPostFragment : Fragment() {
                 )
                     .show()
                 parentFragmentManager.popBackStack()
-            } else Toast.makeText(
-                requireContext(),
-                "Đã có lỗi xảy ra hãy kiểm tra lại",
-                Toast.LENGTH_SHORT
-            )
-                .show()
-        }
-
-
-        binding.btShare.setOnClickListener {
-            if (binding.etContent.text.isEmpty()) {
-                AppToast.show(requireContext(),"Hãy nhập nội dung bài viết")
             } else {
-                SharedPrefer.updateContext(requireContext())
-                val userId = SharedPrefer.getUserId()
-                addPostViewModel.addPost(userId, binding.etContent.text.toString(), postImages)
+                (activity as MainActivity).getBinding().loadingOverlay.visibility = View.GONE // ẩn sau khi xong
+                Toast.makeText(
+                    requireContext(),
+                    "Đã có lỗi xảy ra hãy kiểm tra lại",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
             }
         }
 
+        binding.btShare.setOnClickListener {
+            if (binding.etContent.text.isEmpty()) {
+                AppToast.show(requireContext(), "Hãy nhập nội dung bài viết")
+            } else {
+                (activity as MainActivity).getBinding().loadingOverlay.visibility = View.VISIBLE
+                SharedPrefer.updateContext(requireContext())
+                val userId = SharedPrefer.getId()
+                Log.d("CheckShared", userId)
+                addPostViewModel.createPost(
+                    userId,
+                    binding.etContent.text.toString(),
+                    null,
+                    postImages
+                )
+            }
+        }
+
+        // handle button back
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // update current fragment
+                (activity as MainActivity).apply {
+                    fragmentCurrent = fragmentPre
+                    countFragment--
+                }
+
+                // pop fragment
+                requireActivity()
+                    .supportFragmentManager
+                    .popBackStack()
+            }
+        }
+
+        requireActivity()
+            .onBackPressedDispatcher
+            .addCallback(viewLifecycleOwner, callback)
     }
 
     private fun uriToFile(context: Context, uri: Uri): File {

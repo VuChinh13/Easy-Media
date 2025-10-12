@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.example.instagram.data.model.User
 
 /**
  * class dùng để lưu dữ liệu vào trong SharePreferences
@@ -51,6 +52,18 @@ object SharedPrefer {
 
     fun getSharedPrefer(): SharedPreferences {
         return context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE)
+    }
+
+    fun getUser(): User {
+        return User(
+            id = getId(),
+            username = getUserName(),
+            fullName = getFullName(),
+            email = getEmail(),
+            bio = getBio(),
+            location = getLocation(),
+            profilePicture = getProfilePicture(),
+        )
     }
 
     // lưu dữ liệu

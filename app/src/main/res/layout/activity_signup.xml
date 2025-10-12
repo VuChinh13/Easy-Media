@@ -8,7 +8,7 @@
     android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.component.signup.SignupActivity">
+    tools:context=".ui.component.auth.SignupActivity">
 
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -34,7 +34,7 @@
             android:layout_marginTop="20dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/til" />
+            app:layout_constraintTop_toBottomOf="@+id/til1" />
 
         <TextView
             android:id="@+id/textView7"
@@ -46,10 +46,19 @@
             app:layout_constraintStart_toStartOf="@+id/til" />
 
         <TextView
+            android:id="@+id/textView12"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nhập lại mật khẩu"
+            android:layout_marginBottom="5dp"
+            app:layout_constraintBottom_toTopOf="@+id/til1"
+            app:layout_constraintStart_toStartOf="@+id/til1" />
+
+        <TextView
             android:id="@+id/textView6"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tên"
+            android:text="Tên đầy đủ"
             android:layout_marginBottom="5dp"
             app:layout_constraintBottom_toTopOf="@+id/et_name"
             app:layout_constraintStart_toStartOf="@+id/et_name" />
@@ -98,7 +107,7 @@
             android:hint="Nhập tên người dùng"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView4" />
+            app:layout_constraintTop_toBottomOf="@+id/et_email" />
 
 
         <EditText
@@ -111,10 +120,47 @@
             android:inputType="text"
             android:textSize="15sp"
             android:padding="10dp"
-            android:hint="Nhập tên của bạn"
+            android:hint="Nhập họ tên của bạn"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/et_username" />
+
+        <TextView
+            android:id="@+id/textView10"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Email"
+            android:layout_marginBottom="5dp"
+            android:textColor="@color/black"
+            app:layout_constraintBottom_toTopOf="@+id/et_email"
+            app:layout_constraintStart_toStartOf="@+id/et_email" />
+
+
+        <EditText
+            android:id="@+id/et_email"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="40dp"
+            android:background="@drawable/bg_edittext_login"
+            android:ems="10"
+            android:inputType="text"
+            android:textSize="15sp"
+            android:padding="10dp"
+            android:hint="Nhập email"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textView4" />
+
+
+        <TextView
+            android:id="@+id/textView11"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Email"
+            android:layout_marginBottom="5dp"
+            android:textColor="@color/black"
+            app:layout_constraintBottom_toTopOf="@+id/et_email"
+            app:layout_constraintStart_toStartOf="@+id/et_email" />
 
 
         <com.google.android.material.textfield.TextInputLayout
@@ -138,6 +184,30 @@
                 android:textColor="@color/black"
                 android:inputType="textPassword"
                 android:hint="Nhập mật khẩu"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til1"
+            android:layout_marginTop="40dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/til"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:hintEnabled="false"
+            app:endIconMode="password_toggle">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_confirm_password"
+                android:background="@drawable/bg_edittext_login"
+                android:textSize="15sp"
+                android:padding="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:textColor="@color/black"
+                android:inputType="textPassword"
+                android:hint="Nhập lại mật khẩu"/>
         </com.google.android.material.textfield.TextInputLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

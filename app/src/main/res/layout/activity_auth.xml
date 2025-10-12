@@ -22,44 +22,45 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til"
-            android:layout_marginTop="40dp"
             android:layout_width="match_parent"
             android:layout_height="60dp"
+            android:layout_marginTop="40dp"
             android:layout_marginBottom="25dp"
             app:hintEnabled="false"
+            app:endIconMode="password_toggle"
             app:layout_constraintBottom_toTopOf="@+id/bt_login"
             app:layout_constraintEnd_toEndOf="@+id/bt_login"
-            app:layout_constraintStart_toStartOf="@+id/bt_login"
-            app:endIconMode="password_toggle">
+            app:layout_constraintStart_toStartOf="@+id/bt_login">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_password"
-                android:background="@drawable/bg_edittext_login"
+                android:layout_width="match_parent"
+                android:hint="Mật khẩu"
+                android:layout_height="match_parent"
+                android:inputType="textPassword"
                 android:textSize="15sp"
                 android:padding="10dp"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
                 android:textColor="@color/black"
-                android:inputType="textPassword"
-                android:hint="Mật khẩu"/>
+                android:background="@drawable/bg_edittext_login"/>
         </com.google.android.material.textfield.TextInputLayout>
 
 
 
         <EditText
-            android:id="@+id/et_userName"
+            android:id="@+id/et_email"
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_marginBottom="15dp"
             android:background="@drawable/bg_edittext_login"
             android:ems="10"
-            android:hint="Tên người dùng, email hoặc số điện thoại"
+            android:hint="Nhập Email"
             android:inputType="text"
             android:padding="10dp"
             android:textSize="15sp"
             app:layout_constraintBottom_toTopOf="@+id/til"
             app:layout_constraintEnd_toEndOf="@+id/til"
             app:layout_constraintStart_toStartOf="@+id/til" />
+
         <ImageView
             android:id="@+id/imageView2"
             android:layout_width="80dp"

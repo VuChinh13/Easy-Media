@@ -1,19 +1,17 @@
 package com.example.instagram.ui.component.splash
 
-import android.content.Context
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.instagram.R
 import com.example.instagram.ui.component.auth.AuthActivity
 import com.example.instagram.ui.component.main.MainActivity
 import com.example.instagram.ui.component.utils.SharedPrefer
 
+@SuppressLint("CustomSplashScreen")
 class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,10 +21,11 @@ class SplashActivity : AppCompatActivity() {
             if (SharedPrefer.getSharedPrefer().all.isEmpty()) {
                 startActivity(Intent(this, AuthActivity::class.java))
                 finish()
-            } else {
+            }
+            else {
                 startActivity(Intent(this, MainActivity::class.java))
                 finish()
             }
-        }, 2000) 
+        }, 2000)
     }
 }

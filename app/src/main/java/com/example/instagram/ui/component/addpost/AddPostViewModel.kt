@@ -1,32 +1,42 @@
 package com.example.instagram.ui.component.addpost
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.instagram.data.model.InforUserResponse
-import com.example.instagram.data.model.Post
-import com.example.instagram.data.model.PostResponse
-import com.example.instagram.data.repository.AuthRepository
+import com.example.instagram.data.data_source.cloudinary.CloudinaryServiceImpl
+import com.example.instagram.data.data_source.firebase.FirebasePostService
+import com.example.instagram.data.repository.PostRepository
+import com.example.instagram.data.repository.PostRepositoryImpl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.Dispatcher
 import java.io.File
 
-class AddPostViewModel : ViewModel(){
-    private val authRepository = AuthRepository()
-    private val _getPostResponse = MutableLiveData<PostResponse?>()
-    val getPostResponse: LiveData<PostResponse?> = _getPostResponse
+/**
+ * Tạo bài viết
+ */
+class AddPostViewModel : ViewModel() {
+    private val repo: PostRepository =
+        PostRepositoryImpl(FirebasePostService(cloudinary = CloudinaryServiceImpl()))
+    private val _result = MutableLiveData<Pair<Boolean, String>>()
+    val result: LiveData<Pair<Boolean, String>> = _result
 
-    fun addPost(
+    fun createPost(
         userId: String,
-        content: String,
-        images: List<File>?
+        caption: String,
+        location: String?,
+        imageFiles: List<File>
     ) {
         viewModelScope.launch(Dispatchers.IO) {
-            val result = authRepository.addPost(userId, content, images)
-            _getPostResponse.postValue(result) 
+            val result = repo.createPostWithCloudinary(userId, caption, location, imageFiles)
+            result.onSuccess {
+                // không cần quan tâm id bài viết trả về
+                _result.postValue(true to "")
+            }.onFailure { e ->
+                 Log.d("CheckLoi",e.toString())
+                _result.postValue(false to (e.message ?: "Đã có lỗi xảy ra"))
+            }
         }
     }
-
 }

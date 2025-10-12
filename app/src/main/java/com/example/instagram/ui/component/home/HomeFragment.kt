@@ -10,13 +10,9 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.instagram.R
 import com.example.instagram.databinding.FragmentHomeBinding
-import com.example.instagram.ui.component.animation.FragmentTransactionAnimation.setSlideAnimations
 import com.example.instagram.ui.component.home.adapter.OnAvatarClickListener
 import com.example.instagram.ui.component.home.adapter.PostAdapter
-import com.example.instagram.ui.component.profile.ProfileFragment
-import com.example.instagram.ui.component.utils.IntentExtras
 import com.example.instagram.ui.component.utils.SharedPrefer
 
 class HomeFragment : Fragment(), OnAvatarClickListener {
@@ -32,48 +28,47 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         return binding.root
     }
 
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        homeViewModel.getPost()   
-        homeViewModel.getPost1()  
-
-        homeViewModel.combinedData.observe(viewLifecycleOwner, Observer { combined ->
-            val posts = combined.first
-            val authors = combined.second
-
-            if (posts != null && authors != null) {
+        homeViewModel.getAllPost()
+        homeViewModel.posts.observe(viewLifecycleOwner, Observer { data ->
+            if (data.first.isNotEmpty()) {
+                // nếu mà có danh sách
                 SharedPrefer.updateContext(requireContext())
-                val userId = SharedPrefer.getUserId()
-                val userName = SharedPrefer.getUserName()
-                val userAvatar = SharedPrefer.getAvatar()
-                postAdapter = PostAdapter(posts.data.data, authors, userName, userId, requireContext(),this,userAvatar)
+                val user = SharedPrefer.getUser()
+                postAdapter = PostAdapter(data.first, listOf(), user)
                 binding.rvHome.layoutManager =
                     LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
                 val itemAnimator = DefaultItemAnimator().apply {
-                    addDuration = 400  
-                    removeDuration = 400  
-                    moveDuration = 400  
-                    changeDuration = 400  
+                    addDuration = 400
+                    removeDuration = 400
+                    moveDuration = 400
+                    changeDuration = 400
                 }
                 binding.rvHome.itemAnimator = itemAnimator
                 binding.rvHome.adapter = postAdapter
             } else {
+                // nếu mà trống
                 Toast.makeText(requireContext(), "Đã có lỗi xảy ra", Toast.LENGTH_SHORT).show()
             }
         })
     }
 
     override fun onAvatarClick(username: String) {
-        val profileFragment = ProfileFragment()
-        val bundle = Bundle()
-        bundle.putString(IntentExtras.EXTRA_USER_NAME, username)
-        profileFragment.arguments = bundle
-
-        val transaction = requireActivity().supportFragmentManager.beginTransaction()
-        transaction.setSlideAnimations()
-        transaction.add(R.id.fragment, profileFragment)
-        transaction.addToBackStack(null)
-        transaction.commit()
+        TODO("Not yet implemented")
     }
 }
+
+// Sự kiện nhấn vào Avatar -> sang màn trang cá nhân
+//    override fun onAvatarClick(username: String) {
+//        val profileFragment = ProfileFragment()
+//        val bundle = Bundle()
+//        bundle.putString(IntentExtras.EXTRA_USER_NAME, username)
+//        profileFragment.arguments = bundle
+//
+//        val transaction = requireActivity().supportFragmentManager.beginTransaction()
+//        transaction.setSlideAnimations()
+//        transaction.add(R.id.fragment, profileFragment)
+//        transaction.addToBackStack(null)
+//        transaction.commit()
+//    }

@@ -3,11 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
-    android:background="@color/white"
-    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.component.myprofile.MyProfileActivity">
+    android:background="@color/white"
+    android:fitsSystemWindows="true">
 
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -22,174 +21,286 @@
         app:layout_constraintVertical_bias="0.0">
 
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/constraint1"
-            android:layout_marginTop="5dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintEnd_toEndOf="@+id/cardView"
-            app:layout_constraintStart_toStartOf="@+id/cardView"
-            app:layout_constraintTop_toBottomOf="@+id/cardView">
-
-            <TextView
-                android:id="@+id/tv_username_thread"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingLeft="3dp"
-                android:text="Username"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="@+id/imageView4"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/imageView4"
-                app:layout_constraintTop_toTopOf="@+id/imageView4" />
-
-            <ImageView
-                android:id="@+id/imageView4"
-                android:layout_width="17dp"
-                android:layout_height="17dp"
-                android:scaleType="fitCenter"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_thead" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <TextView
-            android:id="@+id/tv_title_2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:fontFamily="sans-serif-medium"
-            android:text="Hãy tạo bài viết đầu tiên của bạn"
-            android:textColor="#0064E0"
-            app:layout_constraintEnd_toEndOf="@+id/tv_title_1"
-            app:layout_constraintStart_toStartOf="@+id/tv_title_1"
-            app:layout_constraintTop_toBottomOf="@+id/tv_title_1" />
-
-        <ImageView
-            android:id="@+id/iv_logout"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginEnd="20dp"
-            app:layout_constraintBottom_toBottomOf="@+id/iv_update_infor"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/iv_update_infor"
-            app:srcCompat="@drawable/ic_logout" />
-
-        <ImageView
-            android:id="@+id/iv_update_infor"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginEnd="20dp"
-            android:scaleType="fitXY"
-            app:layout_constraintBottom_toBottomOf="@+id/tv_username"
-            app:layout_constraintEnd_toStartOf="@+id/iv_logout"
-            app:layout_constraintTop_toTopOf="@+id/tv_username"
-            app:srcCompat="@drawable/ic_user_setting" />
-
-        <TextView
-            android:id="@+id/tv_title_1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Ghi lại khoảng khắc với bạn bè"
-            android:textSize="21sp"
-            android:textColor="@color/black"
-            android:fontFamily="sans-serif-medium"
-            android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tv_introduce" />
-
-
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_my_post"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginTop="20dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_introduce" />
-
-        <TextView
-            android:id="@+id/tv_introduce"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="13dp"
-            android:fontFamily="sans-serif-medium"
-            app:layout_constraintStart_toStartOf="@+id/tv_username"
-            app:layout_constraintTop_toBottomOf="@+id/constraint1" />
-
-
-        <TextView
-            android:id="@+id/textView9"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Bài viết"
-            android:fontFamily="sans-serif-medium"
-            android:textSize="15sp"
-            app:layout_constraintStart_toStartOf="@+id/tv_total_post"
-            app:layout_constraintTop_toBottomOf="@+id/tv_total_post" />
-
-        <TextView
-            android:id="@+id/tv_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"
-            android:text="Chính Vũ"
-            android:textSize="15dp"
-            android:textColor="@color/black"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium"
-            app:layout_constraintBottom_toTopOf="@+id/tv_total_post"
-            app:layout_constraintStart_toStartOf="@+id/tv_total_post" />
-
-        <TextView
-            android:id="@+id/tv_total_post"
-            android:layout_width="60dp"
-            android:layout_height="23dp"
-            android:layout_marginStart="50dp"
-            android:fontFamily="sans-serif-medium"
-            android:text="0"
-            app:layout_constraintBottom_toBottomOf="@+id/cardView"
-            app:layout_constraintStart_toEndOf="@+id/cardView"
-            app:layout_constraintTop_toTopOf="@+id/cardView" />
-
-        <TextView
-            android:id="@+id/tv_username"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="20dp"
-            android:layout_marginTop="20dp"
-            android:fontFamily="sans-serif-medium"
-            android:text="Username"
-            android:textColor="@color/black"
-            android:textSize="23sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cardView"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_marginTop="20dp"
-            app:cardCornerRadius="35dp"
-            app:layout_constraintEnd_toEndOf="@+id/tv_username"
-            app:layout_constraintStart_toStartOf="@+id/tv_username"
-            app:layout_constraintTop_toBottomOf="@id/tv_username">
-
-            <ImageView
-                android:id="@+id/iv_avatar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:srcCompat="@tools:sample/avatars" />
-        </androidx.cardview.widget.CardView>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <TextView
+        android:id="@+id/tv_title_2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="Biến không gian này thành của riêng bạn"
+        android:textColor="#0064E0"
+        app:layout_constraintEnd_toEndOf="@+id/tv_title_1"
+        app:layout_constraintStart_toStartOf="@+id/tv_title_1"
+        app:layout_constraintTop_toBottomOf="@+id/tv_title_1" />
+
+    <ImageView
+        android:id="@+id/iv_logout"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginEnd="20dp"
+        app:layout_constraintBottom_toBottomOf="@+id/iv_update_infor"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/iv_update_infor"
+        app:srcCompat="@drawable/ic_menu_hamburger" />
+
+    <ImageView
+        android:id="@+id/iv_update_infor"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginEnd="20dp"
+        android:scaleType="fitXY"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_username"
+        app:layout_constraintEnd_toStartOf="@+id/iv_logout"
+        app:layout_constraintTop_toTopOf="@+id/tv_username"
+        app:srcCompat="@drawable/ic_user_setting" />
+
+    <TextView
+        android:id="@+id/tv_title_1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:text="Tạo bài viết đầu tiên"
+        android:textColor="@color/black"
+        android:textSize="21sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_introduce" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_edit_profile"
+        android:layout_width="150dp"
+        android:layout_height="30dp"
+        android:background="@drawable/bg_button_myprofile"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:padding="5dp"
+        android:text="Chỉnh sửa trang cá nhân"
+        android:textAllCaps="false"
+        android:textColor="@color/black"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintLeft_toLeftOf="@id/tv_introduce"
+        app:layout_constraintTop_toBottomOf="@id/tv_introduce" />
+
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_shared_profile"
+        android:layout_width="160dp"
+        android:layout_height="30dp"
+        android:layout_marginLeft="5dp"
+        android:background="@drawable/bg_button_myprofile"
+        android:maxLines="1"
+        android:padding="5dp"
+        android:text="Chia sẻ trang cá nhân"
+        android:textAllCaps="false"
+        android:textColor="@color/black"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/btn_edit_profile"
+        app:layout_constraintLeft_toRightOf="@id/btn_edit_profile"
+        app:layout_constraintTop_toTopOf="@id/btn_edit_profile" />
+
+    <TextView
+        android:id="@+id/tv_introduce"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:fontFamily="sans-serif-medium"
+        app:layout_constraintStart_toStartOf="@+id/tv_username"
+        app:layout_constraintTop_toBottomOf="@+id/cardView" />
+
+
+    <TextView
+        android:id="@+id/textView9"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:text="bài viết"
+        android:textSize="15sp"
+        app:layout_constraintStart_toStartOf="@+id/tv_total_post"
+        app:layout_constraintTop_toBottomOf="@+id/tv_total_post" />
+
+    <TextView
+        android:id="@+id/tv_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="Chính Vũ"
+        android:textColor="@color/black"
+        android:textSize="15dp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/tv_total_post"
+        app:layout_constraintStart_toStartOf="@+id/tv_total_post" />
+
+    <TextView
+        android:id="@+id/tv_total_post"
+        android:layout_width="60dp"
+        android:layout_height="23dp"
+        android:layout_marginStart="15dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="0"
+        app:layout_constraintBottom_toBottomOf="@+id/cardView"
+        app:layout_constraintStart_toEndOf="@+id/cardView"
+        app:layout_constraintTop_toTopOf="@+id/cardView" />
+
+
+    <TextView
+        android:id="@+id/tv_total_followers"
+        android:layout_width="60dp"
+        android:layout_height="23dp"
+        android:layout_marginStart="8dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="0"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_total_post"
+        app:layout_constraintStart_toEndOf="@+id/tv_total_post"
+        app:layout_constraintTop_toTopOf="@+id/tv_total_post" />
+
+
+    <TextView
+        android:id="@+id/textView10"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:text="người theo dõi"
+        android:textSize="15sp"
+        app:layout_constraintStart_toStartOf="@+id/tv_total_followers"
+        app:layout_constraintTop_toBottomOf="@+id/tv_total_followers" />
+
+
+    <TextView
+        android:id="@+id/tv_total_following"
+        android:layout_width="60dp"
+        android:layout_height="23dp"
+        android:layout_marginStart="45dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="0"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_total_followers"
+        app:layout_constraintStart_toEndOf="@+id/tv_total_followers"
+        app:layout_constraintTop_toTopOf="@+id/tv_total_followers" />
+
+
+    <TextView
+        android:id="@+id/textView11"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:text="đang theo dõi"
+        android:textSize="15sp"
+        app:layout_constraintStart_toStartOf="@+id/tv_total_following"
+        app:layout_constraintTop_toBottomOf="@+id/tv_total_following" />
+
+
+    <TextView
+        android:id="@+id/tv_username"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="15dp"
+        android:layout_marginTop="20dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="Username"
+        android:textColor="@color/black"
+        android:textSize="23sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardView"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="20dp"
+        app:cardCornerRadius="35dp"
+        app:layout_constraintEnd_toEndOf="@+id/tv_username"
+        app:layout_constraintStart_toStartOf="@+id/tv_username"
+        app:layout_constraintTop_toBottomOf="@id/tv_username">
+
+        <ImageView
+            android:id="@+id/iv_avatar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:srcCompat="@tools:sample/avatars" />
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="40dp"
+        android:layout_height="30dp"
+        android:layout_marginLeft="5dp"
+        app:cardBackgroundColor="#D6C9C7"
+        app:cardCornerRadius="10dp"
+        app:layout_constraintBottom_toBottomOf="@id/btn_shared_profile"
+        app:layout_constraintLeft_toRightOf="@id/btn_shared_profile"
+        app:layout_constraintTop_toTopOf="@id/btn_shared_profile">
+
+        <ImageView
+            android:id="@+id/iv_add_people"
+            android:layout_width="35dp"
+            android:layout_height="23dp"
+            android:layout_gravity="center"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_add_people" />
+    </androidx.cardview.widget.CardView>
+
+    <ImageView
+        android:id="@+id/iv_add_story"
+        android:layout_width="70dp"
+        android:layout_height="70dp"
+        android:layout_marginTop="20dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_add_story_2"
+        app:layout_constraintStart_toStartOf="@+id/btn_edit_profile"
+        app:layout_constraintTop_toBottomOf="@+id/btn_edit_profile" />
+
+    <TextView
+        android:id="@+id/tv_title3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:text="Mới"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="@+id/iv_add_story"
+        app:layout_constraintStart_toStartOf="@+id/iv_add_story"
+        app:layout_constraintTop_toBottomOf="@+id/iv_add_story" />
+
+
+    <View
+        android:id="@+id/view1"
+        android:layout_width="match_parent"
+        android:layout_height="1.5px"
+        android:layout_marginTop="20dp"
+        android:background="#e0e0e0"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_title3" />
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_my_post"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/view1" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_tao"
+        android:layout_width="80dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/bg_button_share"
+        android:fontFamily="sans-serif-medium"
+        android:text="Tạo"
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        app:layout_constraintLeft_toLeftOf="@+id/tv_title_2"
+        app:layout_constraintRight_toRightOf="@+id/tv_title_2"
+        app:layout_constraintTop_toBottomOf="@id/tv_title_2" />
 </androidx.constraintlayout.widget.ConstraintLayout>
