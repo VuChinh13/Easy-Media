@@ -2,6 +2,7 @@ package com.example.instagram.ui.component.auth
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.util.Patterns
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
@@ -36,6 +37,7 @@ class AuthActivity : AppCompatActivity() {
         // Đăng nhập
         binding.btLogin.setOnClickListener {
             if (validateForm()) {
+                Log.d("Checklog", "dang goi")
                 authViewModel.login(
                     email = binding.etEmail.text?.toString()?.trim().orEmpty(),
                     password = binding.etPassword.text?.toString().orEmpty()

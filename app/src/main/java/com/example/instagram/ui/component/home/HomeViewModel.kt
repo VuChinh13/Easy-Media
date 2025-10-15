@@ -44,16 +44,4 @@ class HomeViewModel : ViewModel() {
             }
         }
     }
-
-    // Lấy tất cả những người dùng của bài viết
-    fun getUserOfPost(listPost: List<Post>) {
-        viewModelScope.launch {
-            listPost.forEach {
-                val result = repoAuth.getUserById(it.userId)
-                result.onSuccess {
-                    _user.postValue(it)
-                }
-            }
-        }
-    }
 }

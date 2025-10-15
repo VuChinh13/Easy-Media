@@ -43,6 +43,7 @@ android {
 dependencies {
 
     implementation("com.tbuonomo:dotsindicator:5.0")
+    implementation("com.facebook.shimmer:shimmer:0.5.0")
     // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
 

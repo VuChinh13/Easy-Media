@@ -26,16 +26,19 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
 
-                    <ImageView
-                        android:id="@+id/imageView3"
+                    <TextView
+                        android:id="@+id/textView16"
                         android:layout_width="140dp"
                         android:layout_height="60dp"
-                        android:layout_marginTop="5dp"
+                        android:layout_marginTop="4dp"
                         android:paddingRight="15dp"
-                        android:scaleType="centerCrop"
+                        android:fontFamily="@font/lobster_two_regular_font"
+                        android:gravity="center"
+                        android:textSize="28sp"
+                        android:textColor="@color/black"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:srcCompat="@drawable/img_text_instagram" />
+                        android:text="EasyMedia" />
 
                     <ImageView
                         android:id="@+id/btn_messenger"

@@ -20,16 +20,14 @@
 
     <ImageView
         android:id="@+id/iv_logo_instagram"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         android:scaleType="fitXY"
-        app:srcCompat="@drawable/ic_instagram" />
-
-
+        app:srcCompat="@drawable/img_logo" />
 
     <ImageView
         android:id="@+id/iv_logo_meta"
@@ -41,8 +39,5 @@
         android:scaleType="fitXY"
         android:layout_marginBottom="45dp"
         app:srcCompat="@drawable/ic_meta_instagram" />
-
-
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

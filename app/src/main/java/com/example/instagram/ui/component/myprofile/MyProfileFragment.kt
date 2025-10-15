@@ -39,7 +39,7 @@ class MyProfileFragment : Fragment() {
 
         (activity as MainActivity).fragmentCurrent = "MyProfileFragment"
         (activity as MainActivity).countFragment++
-        (activity as MainActivity).getBinding().loadingOverlay.visibility = View.VISIBLE
+        (activity as MainActivity).showLoading()
 
         SharedPrefer.updateContext(requireContext())
         val uid = SharedPrefer.getId()
@@ -76,7 +76,7 @@ class MyProfileFragment : Fragment() {
                 binding.tvTitle1.visibility = View.GONE
                 binding.tvTitle2.visibility = View.GONE
                 binding.btnTao.visibility = View.GONE
-                (activity as MainActivity).getBinding().loadingOverlay.visibility = View.GONE
+                (activity as MainActivity).hideLoading()
                 myPostAdapter =
                     MyPostAdapter(requireActivity(), result)
                 binding.rvMyPost.layoutManager = GridLayoutManager(requireContext(), 3)

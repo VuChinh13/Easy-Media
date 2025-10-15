@@ -8,6 +8,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
@@ -23,6 +24,7 @@ import com.example.instagram.data.repository.AuthRepositoryImpl
 import com.example.instagram.data.repository.PostRepositoryImpl
 import com.example.instagram.databinding.ItemFirstPostBinding
 import com.example.instagram.databinding.ItemPostBinding
+import com.example.instagram.ui.component.comment.CommentBottomSheet
 import com.example.instagram.ui.component.utils.SharedPrefer
 import com.example.instagram.ui.component.utils.TimeFormatter
 import kotlinx.coroutines.CoroutineScope
@@ -45,8 +47,8 @@ class PostAdapter(
     private var context: Context? = null
     private val authRepository =
         AuthRepositoryImpl(FirebaseAuthService())
-    private val adapterScope = CoroutineScope(Dispatchers.IO)
     private var check = false
+    private val userId = SharedPrefer.getId()
 
     companion object {
         private const val VIEW_TYPE_HEADER = 0
@@ -54,29 +56,26 @@ class PostAdapter(
     }
 
     class FirstPostViewHolder(binding: ItemFirstPostBinding) :
-        RecyclerView.ViewHolder(binding.root), LikeableViewHolder {
+        RecyclerView.ViewHolder(binding.root) {
         val imageUserStory: ImageView = binding.ivUserStory
         val story: LinearLayout = binding.story
-        val username: TextView = binding.tvUsername
-        val caption: TextView = binding.tvContent
-        val viewPager: ViewPager2 = binding.viewPager
-        val imageAvatar: ImageView = binding.ivAvatar
-        val tvCreateAt: TextView = binding.tvCreateAt
-        override val tvTotalLike: TextView = binding.tvTotalLike
-        override val imageLike: ImageView = binding.ivLike
-        val dotsIndicator = binding.dotsIndicator
     }
 
-    class PostViewHolder(binding: ItemPostBinding) : RecyclerView.ViewHolder(binding.root),
-        LikeableViewHolder {
+    class PostViewHolder(binding: ItemPostBinding) : RecyclerView.ViewHolder(binding.root) {
         val username: TextView = binding.tvUsername
         val caption: TextView = binding.tvContent
         val viewPager: ViewPager2 = binding.viewPager
         val imageAvatar: ImageView = binding.ivAvatar
         val tvCreateAt: TextView = binding.tvCreateAt
-        override val tvTotalLike: TextView = binding.tvTotalLike
-        override val imageLike: ImageView = binding.ivLike
+        val tvTotalLike: TextView = binding.tvTotalLike
+        val imageLike: ImageView = binding.ivLike
         val dotsIndicator = binding.dotsIndicator
+        val shimmerAvatar = binding.shimmerAvatar
+        val shimmerUser = binding.shimmerUsername
+        val cardView = binding.cardView
+        val btnComment = binding.btnComment
+
+        val tvTotalComment = binding.tvTotalComment
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -97,21 +96,7 @@ class PostAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        var liked = false
-        val post = posts[position]
         if (holder is FirstPostViewHolder && !check) {
-            // 1) Luôn set adapter & attach indicator NGAY, trước khi gọi API
-            with(holder) {
-                viewPager.adapter = ImagePagerAdapter(post.imageUrls)
-                dotsIndicator.attachTo(viewPager)
-
-                // Ẩn chấm nếu chỉ có 1 ảnh (nhiều thư viện tự ẩn; ta chủ động luôn)
-                dotsIndicator.visibility =
-                    if (post.imageUrls.size > 1) View.VISIBLE else View.GONE
-                caption.text = post.caption
-                tvCreateAt.text = TimeFormatter.getRelativeTime(post.createdAt)
-                tvTotalLike.text = post.counts.likes.toString()
-            }
 
             // Hiển thị dữ liệu cho item đầu tiên
             listUser.forEach { user ->
@@ -139,52 +124,18 @@ class PostAdapter(
                 .apply(RequestOptions().diskCacheStrategy(DiskCacheStrategy.ALL))
                 .into(holder.imageUserStory)
 
-            // Hiển thị tym đỏ ở bài viết
-            CoroutineScope(Dispatchers.IO).launch {
-                val result = postRepository.hasUserLiked(post.id, SharedPrefer.getId())
-                result.onSuccess {
-                    if (it) {
-                        withContext(Dispatchers.Main) {
-                            holder.imageLike.setImageResource(R.drawable.ic_heart_red)
-                            liked = true
-                        }
-                    } else {
-                        holder.imageLike.setImageResource(R.drawable.ic_heart)
-                    }
-                }.onFailure {
-                    withContext(Dispatchers.Main) {
-                        liked = false
-                    }
-                }
-            }
-
-            // Sự kiện khi mà nhấn tym
-            liked = likeEvent(holder, liked, post)
-
-            // Hiển thị những thông tin cần thiết lên UI
-            // 2) Phần fetch user làm sau, không ảnh hưởng indicator
-            adapterScope.launch {
-                val result = authRepository.getUserById(post.userId)
-                result.onSuccess { user ->
-                    withContext(Dispatchers.Main) {
-                        with(holder) {
-                            username.text = user?.username
-                            Glide.with(itemView.context)
-                                .load(user?.profilePicture)
-                                .apply(RequestOptions().diskCacheStrategy(DiskCacheStrategy.ALL))
-                                .error(R.drawable.ic_avatar)
-                                .into(imageAvatar)
-                        }
-                    }
-                }.onFailure {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Đã có lỗi xảy ra", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
         } else if (holder is PostViewHolder) {
+            val post = posts[position - 1]
             // 1) Luôn set adapter & attach indicator NGAY, trước khi gọi API
             with(holder) {
+                shimmerAvatar.visibility = View.VISIBLE
+                shimmerUser.visibility = View.VISIBLE
+                username.visibility = View.INVISIBLE
+                cardView.visibility = View.INVISIBLE
+                shimmerAvatar.startShimmer()
+                shimmerUser.startShimmer()
+
+
                 viewPager.adapter = ImagePagerAdapter(post.imageUrls)
                 dotsIndicator.attachTo(viewPager)
 
@@ -192,34 +143,13 @@ class PostAdapter(
                 dotsIndicator.visibility =
                     if (post.imageUrls.size > 1) View.VISIBLE else View.GONE
                 caption.text = post.caption
+                tvTotalComment.text = post.counts.comments.toString()
                 tvCreateAt.text = TimeFormatter.getRelativeTime(post.createdAt)
                 tvTotalLike.text = post.counts.likes.toString()
             }
 
-            // hiển thị tym đỏ
-            CoroutineScope(Dispatchers.IO).launch {
-                val result = postRepository.hasUserLiked(post.id, SharedPrefer.getId())
-                result.onSuccess {
-                    if (it) {
-                        withContext(Dispatchers.Main) {
-                            holder.imageLike.setImageResource(R.drawable.ic_heart_red)
-                            liked = true
-                        }
-                    } else {
-                        holder.imageLike.setImageResource(R.drawable.ic_heart)
-                    }
-                }.onFailure {
-                    withContext(Dispatchers.Main) {
-                        liked = false
-                    }
-                }
-            }
-
-            // Sự kiện khi mà nhấn tym
-            liked = likeEvent(holder, liked, post)
-
             // Hiển thị những thông tin cần thiết lên UI
-            adapterScope.launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 val result = authRepository.getUserById(post.userId)
                 result.onSuccess { user ->
                     withContext(Dispatchers.Main) {
@@ -230,6 +160,15 @@ class PostAdapter(
                                 .apply(RequestOptions().diskCacheStrategy(DiskCacheStrategy.ALL))
                                 .error(R.drawable.ic_avatar)
                                 .into(imageAvatar)
+
+                            // sau khi mà load xong
+                            shimmerAvatar.stopShimmer()
+                            shimmerAvatar.visibility = View.GONE
+                            shimmerUser.stopShimmer()
+                            shimmerUser.visibility = View.GONE
+
+                            username.visibility = View.VISIBLE
+                            cardView.visibility = View.VISIBLE
                         }
                     }
                 }.onFailure {
@@ -238,58 +177,76 @@ class PostAdapter(
                     }
                 }
             }
+
+            // hiển thị tym đỏ
+            CoroutineScope(Dispatchers.IO).launch {
+                val result = postRepository.hasUserLiked(post.id, userId)
+                result.onSuccess {
+                    if (it) {
+                        withContext(Dispatchers.Main) {
+                            holder.imageLike.setImageResource(R.drawable.ic_heart_red)
+                            likeEvent(holder, true, post)
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            holder.imageLike.setImageResource(R.drawable.ic_heart)
+                            likeEvent(holder, false, post)
+                        }
+                    }
+                }.onFailure {
+                    withContext(Dispatchers.Main) {
+                        // Làm gì đó
+                    }
+                }
+            }
+
+            // Sự kiện Comment
+            holder.btnComment.setOnClickListener {
+                val commentSheet = CommentBottomSheet(post.id, userId)
+                commentSheet.show(
+                    (holder.itemView.context as AppCompatActivity).supportFragmentManager,
+                    "CommentBottomSheet"
+                )
+            }
         }
     }
 
-    private fun likeEvent(
-        holder: LikeableViewHolder,
-        liked: Boolean,
-        post: Post
-    ): Boolean {
-        var liked1 = liked
+    private fun likeEvent(holder: PostViewHolder, isInitiallyLiked: Boolean, post: Post) {
+        var liked = isInitiallyLiked
+
         holder.imageLike.setOnClickListener {
-            if (liked1) {
-                holder.imageLike.setImageResource(R.drawable.ic_heart)
-                liked1 = !liked1
-                post.counts.likes -= 1
-                holder.tvTotalLike.text = post.counts.likes.toString()
+            liked = !liked
+            holder.imageLike.setImageResource(
+                if (liked) R.drawable.ic_heart_red else R.drawable.ic_heart
+            )
 
-                adapterScope.launch {
-                    val result = postRepository.unlikePost(post.id, SharedPrefer.getId())
-                    result.onFailure {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "Đã có lỗi xảy ra", Toast.LENGTH_SHORT).show()
-                        }
-                    }
+            // Cập nhật số lượng like ngay lập tức
+            post.counts.likes += if (liked) 1 else -1
+            holder.tvTotalLike.text = post.counts.likes.toString()
+
+            // Gọi API theo trạng thái mới
+            CoroutineScope(Dispatchers.IO).launch {
+                val result = if (liked) {
+                    postRepository.likePost(post.id, userId)
+                } else {
+                    postRepository.unlikePost(post.id, userId)
                 }
-            } else {
-                holder.imageLike.setImageResource(R.drawable.ic_heart_red)
-                liked1 = !liked1
-                post.counts.likes += 1
-                holder.tvTotalLike.text = post.counts.likes.toString()
 
-                adapterScope.launch {
-                    val result = postRepository.likePost(post.id, SharedPrefer.getId())
-                    result.onFailure {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "Đã có lỗi xảy ra", Toast.LENGTH_SHORT).show()
-                        }
+                result.onFailure {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Đã có lỗi xảy ra", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         }
-        return liked1
     }
 
-    override fun getItemCount(): Int = posts.size
+    override fun getItemCount(): Int {
+        return posts.size + 1
+    }
 }
 
 interface OnAvatarClickListener {
     fun onAvatarClick(username: String)
-}
-
-interface LikeableViewHolder {
-    val imageLike: ImageView
-    val tvTotalLike: TextView
 }
 

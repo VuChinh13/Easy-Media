@@ -13,8 +13,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.instagram.databinding.FragmentHomeBinding
 import com.example.instagram.ui.component.home.adapter.OnAvatarClickListener
 import com.example.instagram.ui.component.home.adapter.PostAdapter
+import com.example.instagram.ui.component.main.MainActivity
 import com.example.instagram.ui.component.utils.SharedPrefer
 
+/**
+ * Xử lí việc phân trang
+ */
 class HomeFragment : Fragment(), OnAvatarClickListener {
     private lateinit var binding: FragmentHomeBinding
     private val homeViewModel: HomeViewModel by viewModels()
@@ -31,8 +35,12 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         homeViewModel.getAllPost()
+
+        (activity as MainActivity).showLoading()
+
         homeViewModel.posts.observe(viewLifecycleOwner, Observer { data ->
             if (data.first.isNotEmpty()) {
+                (activity as MainActivity).hideLoading()
                 // nếu mà có danh sách
                 SharedPrefer.updateContext(requireContext())
                 val user = SharedPrefer.getUser()
@@ -52,6 +60,15 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
                 Toast.makeText(requireContext(), "Đã có lỗi xảy ra", Toast.LENGTH_SHORT).show()
             }
         })
+
+        parentFragmentManager.setFragmentResultListener("request_post_added", viewLifecycleOwner) { _, bundle ->
+            val isAdded = bundle.getBoolean("isAdded")
+            if (isAdded) {
+                // Gọi lại API load danh sách bài viết
+                homeViewModel.getAllPost()
+            }
+        }
+
     }
 
     override fun onAvatarClick(username: String) {

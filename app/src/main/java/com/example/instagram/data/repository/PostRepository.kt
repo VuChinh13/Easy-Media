@@ -1,6 +1,7 @@
 package com.example.instagram.data.repository
 
 import com.example.instagram.data.data_source.firebase.PostService
+import com.example.instagram.data.model.Comment
 import com.example.instagram.data.model.Post
 import java.io.File
 
@@ -25,6 +26,7 @@ interface PostRepository {
     suspend fun unlikePost(postId: String, userId: String): Result<Unit>
     suspend fun hasUserLiked(postId: String, userId: String): Result<Boolean>
     suspend fun getAllPosts(): Result<List<Post>>
+    suspend fun getComments(postId: String): Result<List<Comment>>
 }
 
 class PostRepositoryImpl(
@@ -66,4 +68,7 @@ class PostRepositoryImpl(
 
     override suspend fun getAllPosts(): Result<List<Post>> =
         runCatching { service.getAllPosts() }
+
+    override suspend fun getComments(postId: String): Result<List<Comment>> =
+        runCatching { service.getComments(postId) }
 }

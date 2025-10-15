@@ -28,7 +28,7 @@ interface PostService {
     suspend fun likePost(postId: String, userId: String)
     suspend fun unlikePost(postId: String, userId: String)
     suspend fun hasUserLiked(postId: String, userId: String): Boolean
-
+    suspend fun getComments(postId: String): List<Comment>
     // Tạo post từ file ảnh (upload Cloudinary → lưu Firestore)
     suspend fun createPostWithCloudinary(
         userId: String,
@@ -138,17 +138,36 @@ class FirebasePostService(
     }
 
     override suspend fun addComment(postId: String, userId: String, content: String): String {
-        val comments = db.collection("posts").document(postId).collection("comments")
-        val docRef = comments.document()
-        val comment = Comment(id = docRef.id, userId = userId, content = content)
-        db.runBatch { b ->
-            b.set(docRef, comment)
-            b.update(
+        val commentsRef = db.collection("posts").document(postId).collection("comments")
+        val docRef = commentsRef.document()
+
+        val comment = Comment(
+            id = docRef.id,
+            userId = userId,
+            content = content
+        )
+
+        db.runBatch { batch ->
+            // Ghi dữ liệu comment
+            batch.set(docRef, comment)
+
+            // Cập nhật thời gian tạo trên server
+            batch.update(
+                docRef,
+                mapOf(
+                    "created_at" to FieldValue.serverTimestamp(),
+                    "updated_at" to FieldValue.serverTimestamp()
+                )
+            )
+
+            // Tăng count comment trong post cha
+            batch.update(
                 db.collection("posts").document(postId),
                 "counts.comments",
                 FieldValue.increment(1)
             )
         }.await()
+
         return docRef.id
     }
 
@@ -180,5 +199,18 @@ class FirebasePostService(
         val doc = db.collection("posts").document(postId).collection("likes").document(userId).get()
             .await()
         return doc.exists()
+    }
+
+    override suspend fun getComments(postId: String): List<Comment> {
+        val snapshot = db.collection("posts")
+            .document(postId)
+            .collection("comments")
+            .orderBy("created_at", Query.Direction.ASCENDING) // Cũ → mới (hoặc DESCENDING nếu muốn ngược lại)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            doc.toObject(Comment::class.java)?.copy(id = doc.id)
+        }
     }
 }

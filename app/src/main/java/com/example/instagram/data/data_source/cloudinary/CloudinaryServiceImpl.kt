@@ -20,7 +20,7 @@ class CloudinaryServiceImpl(
         imageFile: File,
         folder: String
     ): CloudinaryUploadResult = withContext(Dispatchers.IO) {
-        Log.d("CloudinaryService", "🔄 Bắt đầu upload ảnh: ${imageFile.name}, folder: $folder")
+        Log.d("CloudinaryService", "Bắt đầu upload ảnh: ${imageFile.name}, folder: $folder")
 
         val mediaType = "image/*".toMediaTypeOrNull()
         val fileBody = imageFile.asRequestBody(mediaType)
@@ -37,10 +37,10 @@ class CloudinaryServiceImpl(
             .build()
 
         httpClient.newCall(req).execute().use { resp ->
-            Log.d("CloudinaryService", "📤 HTTP status: ${resp.code}")
+            Log.d("CloudinaryService", "HTTP status: ${resp.code}")
 
             if (!resp.isSuccessful) {
-                Log.e("CloudinaryService", "❌ Upload thất bại: ${resp.code} ${resp.message}")
+                Log.e("CloudinaryService", "Upload thất bại: ${resp.code} ${resp.message}")
                 error("Cloudinary upload failed: ${resp.code} ${resp.message}")
             }
 
@@ -50,9 +50,9 @@ class CloudinaryServiceImpl(
             val secureUrl = json.getString("secure_url")
             val publicId = json.getString("public_id")
 
-            Log.d("CloudinaryService", "✅ Upload thành công!")
-            Log.d("CloudinaryService", "🌐 URL: $secureUrl")
-            Log.d("CloudinaryService", "🆔 Public ID: $publicId")
+            Log.d("CloudinaryService", "Upload thành công!")
+            Log.d("CloudinaryService", "URL: $secureUrl")
+            Log.d("CloudinaryService", "Public ID: $publicId")
 
             CloudinaryUploadResult(
                 secureUrl = secureUrl,

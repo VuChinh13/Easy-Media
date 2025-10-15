@@ -2,6 +2,7 @@ package com.example.instagram.ui.component.main
 
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.example.instagram.R
 import com.example.instagram.databinding.ActivityMainBinding
@@ -29,13 +30,14 @@ class MainActivity : AppCompatActivity() {
         binding.btnAdd.setOnClickListener {
             if (fragmentCurrent != "AddPostFragment") {
                 if (fragmentPre != "HomeFragment")  fragmentPre = fragmentCurrent
+                // ẩn đi BottomBar
                 val addPostFragment = AddPostFragment()
-                Log.d("kiem tra", "ok roi ma")
                 val transactionAddPostFragment = supportFragmentManager.beginTransaction()
                 transactionAddPostFragment.setSlideAnimations()
                 transactionAddPostFragment.add(R.id.fragment, addPostFragment)
                 transactionAddPostFragment.addToBackStack(null)
                 transactionAddPostFragment.commit()
+                hideBottomBar()
             }
         }
 
@@ -86,5 +88,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun getBinding(): ActivityMainBinding = this.binding
+    fun showLoading(){
+        binding.loadingOverlay.visibility = View.VISIBLE
+    }
+
+    fun hideLoading(){
+        binding.loadingOverlay.visibility = View.GONE
+    }
+
+    fun hideBottomBar(){
+        binding.bottomBar.visibility = View.INVISIBLE
+    }
+
+    fun showBottomBar(){
+        binding.bottomBar.visibility = View.VISIBLE
+    }
 }

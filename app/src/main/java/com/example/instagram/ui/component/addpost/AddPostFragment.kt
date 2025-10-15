@@ -3,14 +3,18 @@ package com.example.instagram.ui.component.addpost
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.example.instagram.databinding.FragmentAddPostBinding
@@ -48,6 +52,8 @@ class AddPostFragment : Fragment() {
                         binding.ivPostImage.setImageURI(uri)
                         postImages.add(uriToFile(requireContext(), uri))
                     }
+                    // Hiển thị nút đó sau khi mà chọn xong nếu mà có chọn ảnh
+                    binding.btnClearSelection.visibility = View.VISIBLE
                 }
             }
 
@@ -56,12 +62,14 @@ class AddPostFragment : Fragment() {
         }
 
         binding.ivClose.setOnClickListener {
+            (activity as MainActivity).showBottomBar()
             parentFragmentManager.popBackStack()
         }
 
         addPostViewModel.result.observe(viewLifecycleOwner) { result ->
             if (result.first) {
-                (activity as MainActivity).getBinding().loadingOverlay.visibility = View.GONE // ẩn sau khi xong
+                (activity as MainActivity).hideLoading()
+                (activity as MainActivity).showBottomBar()
                 // Nếu mà thành công
                 Toast.makeText(
                     requireContext(),
@@ -69,26 +77,32 @@ class AddPostFragment : Fragment() {
                     Toast.LENGTH_SHORT
                 )
                     .show()
+                parentFragmentManager.setFragmentResult(
+                    "request_post_added",
+                    bundleOf("isAdded" to true)
+                )
                 parentFragmentManager.popBackStack()
             } else {
-                (activity as MainActivity).getBinding().loadingOverlay.visibility = View.GONE // ẩn sau khi xong
+                (activity as MainActivity).hideLoading()
+                (activity as MainActivity).showBottomBar()
                 Toast.makeText(
                     requireContext(),
                     "Đã có lỗi xảy ra hãy kiểm tra lại",
                     Toast.LENGTH_SHORT
                 )
                     .show()
+                parentFragmentManager.popBackStack()
             }
         }
 
+        // chỗ này cần phải kiểm tra xem là có ảnh không hiểu không
         binding.btShare.setOnClickListener {
-            if (binding.etContent.text.isEmpty()) {
-                AppToast.show(requireContext(), "Hãy nhập nội dung bài viết")
+            if (binding.etContent.text!!.isEmpty() || postImages.isEmpty()) {
+                AppToast.show(requireContext(), "Hãy thêm nội dung và ảnh để hoàn thiện bài viết")
             } else {
-                (activity as MainActivity).getBinding().loadingOverlay.visibility = View.VISIBLE
+                (activity as MainActivity).showLoading()
                 SharedPrefer.updateContext(requireContext())
                 val userId = SharedPrefer.getId()
-                Log.d("CheckShared", userId)
                 addPostViewModel.createPost(
                     userId,
                     binding.etContent.text.toString(),
@@ -96,6 +110,7 @@ class AddPostFragment : Fragment() {
                     postImages
                 )
             }
+
         }
 
         // handle button back
@@ -108,6 +123,7 @@ class AddPostFragment : Fragment() {
                 }
 
                 // pop fragment
+                (activity as MainActivity).showBottomBar()
                 requireActivity()
                     .supportFragmentManager
                     .popBackStack()
@@ -117,6 +133,13 @@ class AddPostFragment : Fragment() {
         requireActivity()
             .onBackPressedDispatcher
             .addCallback(viewLifecycleOwner, callback)
+
+        // Sự kiện khi Clear
+        binding.btnClearSelection.setOnClickListener {
+            binding.ivPostImage.setImageDrawable(null)
+            postImages.clear()
+            binding.btnClearSelection.visibility = View.INVISIBLE
+        }
     }
 
     private fun uriToFile(context: Context, uri: Uri): File {
