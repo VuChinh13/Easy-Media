@@ -3,40 +3,57 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
+    android:layout_height="match_parent"
     android:paddingLeft="5dp"
-    android:paddingRight="5dp"
-    android:layout_height="wrap_content">
+    android:paddingRight="5dp">
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardview"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl1"
+        android:layout_width="94dp"
+        android:layout_height="94dp"
+        android:padding="4dp"
+        android:background="@drawable/bg_story"
+        app:layout_constraintBottom_toBottomOf="@id/guideline_half"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/guideline_half">
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="40dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:strokeWidth="0dp">
+
+            <ImageView
+                android:id="@+id/iv_user_story"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:scaleType="centerCrop"
+                tools:srcCompat="@tools:sample/avatars" />
+        </com.google.android.material.card.MaterialCardView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Guideline ngang, nằm giữa màn hình -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline_half"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:strokeColor="#FF6541"
-        app:strokeWidth="3dp"
-        app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="40dp"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageView
-            android:id="@+id/iv_user_story"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:scaleType="centerCrop"
-            tools:srcCompat="@tools:sample/avatars" />
-    </com.google.android.material.card.MaterialCardView>
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.4" />
 
     <TextView
-        android:id="@+id/textView2"
-        android:gravity="center_horizontal"
-        android:fontFamily="sans-serif-medium"
+        android:id="@+id/txtUsername"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center_horizontal"
         android:text="Tin của a"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cardview" />
+        app:layout_constraintRight_toRightOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

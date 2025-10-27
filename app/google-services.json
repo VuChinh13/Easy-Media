@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:485270518058:android:7938e45a838a731af28653",
+        "mobilesdk_app_id": "1:485270518058:android:cc82ec97b31155f2f28653",
         "android_client_info": {
-          "package_name": "com.example.instagram"
+          "package_name": "com.example.easymedia"
         }
       },
       "oauth_client": [],

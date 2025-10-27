@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.instagram"
+    namespace = "com.example.easymedia"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.instagram"
+        applicationId = "com.example.easymedia"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

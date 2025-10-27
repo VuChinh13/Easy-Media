@@ -1,12 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.Instagram" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.EasyMedia" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:statusBarColor">@color/colorPrimary</item>
     </style>
-    <style name="Theme.Instagram" parent="Base.Theme.Instagram" />
-    <style name="Theme.Instagram.NoSplash" parent="Base.Theme.Instagram">
+    <style name="Theme.EasyMedia" parent="Base.Theme.EasyMedia" />
+    <style name="Theme.EasyMedia.NoSplash" parent="Base.Theme.EasyMedia">
       <item name="android:windowIsTranslucent">true</item>
     </style>
 </resources>

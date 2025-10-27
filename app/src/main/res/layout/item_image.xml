@@ -8,23 +8,10 @@
         android:id="@+id/imageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="centerCrop" />
-
-    <!-- Áp shimmer cho ảnh -->
-    <com.facebook.shimmer.ShimmerFrameLayout
-        android:id="@+id/shimmerImagePost"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:shimmer_auto_start="true">
-
-        <!-- Placeholder hình tròn -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </com.facebook.shimmer.ShimmerFrameLayout>
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

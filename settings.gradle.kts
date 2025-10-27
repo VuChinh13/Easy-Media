@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Instagram"
+rootProject.name = "EasyMedia"
 include(":app")
  

@@ -6,75 +6,14 @@
     android:layout_height="wrap_content"
     android:paddingBottom="15dp">
 
-
-    <HorizontalScrollView
-        android:id="@+id/str"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rcvStory"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scrollbars="none"
+        android:layout_height="119dp"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <LinearLayout
-            android:id="@+id/story"
-            android:layout_width="match_parent"
-            android:layout_height="110dp"
-            android:orientation="horizontal"
-            android:paddingTop="5dp"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_marginLeft="10dp">
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardview"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="40dp"
-                    app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:strokeColor="#FF6541"
-                    app:strokeWidth="3dp">
-
-                    <ImageView
-                        android:id="@+id/iv_user_story"
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
-                        android:scaleType="centerCrop"
-                        tools:srcCompat="@tools:sample/avatars" />
-                </com.google.android.material.card.MaterialCardView>
-
-                <ImageView
-                    android:layout_width="45dp"
-                    android:layout_height="45dp"
-                    android:layout_marginBottom="13dp"
-                    android:layout_marginLeft="48dp"
-                    android:src="@drawable/ic_add_story"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintLeft_toLeftOf="parent" />
-
-
-                <TextView
-                    android:id="@+id/textView2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="Tin của bạn"
-                    app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/cardview" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </LinearLayout>
-    </HorizontalScrollView>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/textView12"
@@ -86,7 +25,7 @@
         android:text="Bạn đã xem hết các bài viết mới nhất của những tài khoản mình theo dõi"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/imageView6"
-        app:layout_constraintTop_toBottomOf="@+id/str" />
+        app:layout_constraintTop_toBottomOf="@+id/rcvStory" />
 
     <TextView
         android:id="@+id/textView13"

@@ -1,0 +1,43 @@
+package com.example.easymedia.ui.component.addpost
+
+import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
+import com.example.easymedia.data.data_source.firebase.FirebasePostService
+import com.example.easymedia.data.model.Location
+import com.example.easymedia.data.repository.PostRepository
+import com.example.easymedia.data.repository.PostRepositoryImpl
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.io.File
+
+/**
+ * Tạo bài viết
+ */
+class AddPostViewModel : ViewModel() {
+    private val repo: PostRepository =
+        PostRepositoryImpl(FirebasePostService(cloudinary = CloudinaryServiceImpl()))
+    private val _result = MutableLiveData<Pair<Boolean, String>>()
+    val result: LiveData<Pair<Boolean, String>> = _result
+
+    fun createPost(
+        userId: String,
+        caption: String,
+        location: Location?,
+        imageFiles: List<File>
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = repo.createPostWithCloudinary(userId, caption, location, imageFiles)
+            result.onSuccess {
+                // không cần quan tâm id bài viết trả về
+                _result.postValue(true to "")
+            }.onFailure { e ->
+                 Log.d("CheckLoi",e.toString())
+                _result.postValue(false to (e.message ?: "Đã có lỗi xảy ra"))
+            }
+        }
+    }
+}

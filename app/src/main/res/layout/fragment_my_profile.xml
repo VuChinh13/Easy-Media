@@ -199,7 +199,7 @@
         android:id="@+id/tv_username"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="15dp"
+        android:layout_marginLeft="20dp"
         android:layout_marginTop="20dp"
         android:fontFamily="sans-serif-medium"
         android:text="Username"
@@ -211,8 +211,8 @@
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cardView"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="70dp"
+        android:layout_height="70dp"
         android:layout_marginTop="20dp"
         app:cardCornerRadius="35dp"
         app:layout_constraintEnd_toEndOf="@+id/tv_username"

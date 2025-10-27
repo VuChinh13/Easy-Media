@@ -1,6 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@android:color/white"/> <!-- Màu nền nếu cần -->
-    <stroke android:width="10dp" android:color="#FF6541"/>
-    <corners android:radius="35dp"/>
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Lớp viền ngoài có gradient nhiều màu -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="0"
+                android:startColor="#FAF006"
+                android:centerColor="#FACC05"
+                android:centerX="0.15"
+                android:centerY="0.15"
+                android:endColor="#FF0000" />
+
+            <!-- Dải màu mở rộng (Instagram-like) -->
+            <gradient
+                android:type="linear"
+                android:angle="0"
+                android:startColor="#FAF006"
+                android:centerColor="#FACC05"
+                android:endColor="#A86DD3"
+                android:useLevel="false" />
+
+            <corners android:radius="47dp"/>
+        </shape>
+    </item>
+
+    <!-- Lớp nền trong tạo khoảng trống (viền rõ ràng) -->
+    <item
+        android:left="4dp"
+        android:top="4dp"
+        android:right="4dp"
+        android:bottom="4dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/white" />
+            <corners android:radius="47dp"/>
+        </shape>
+    </item>
+
+</layer-list>
