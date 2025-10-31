@@ -79,7 +79,10 @@ class HomeViewModel : ViewModel() {
     }
 
     fun refresh() {
+        isLoading = false
+        isLastPage = false
         lastVisible = null
+        currentPosts.clear()
         fetchFirstPage()
     }
 }

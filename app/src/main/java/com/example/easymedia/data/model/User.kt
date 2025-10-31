@@ -1,12 +1,15 @@
 package com.example.easymedia.data.model
 
+import android.os.Parcelable
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.PropertyName
 import com.google.firebase.firestore.ServerTimestamp
+import kotlinx.parcelize.Parcelize
 import java.util.Date
 
 @IgnoreExtraProperties
+@Parcelize
 data class User(
     @DocumentId
     val id: String = "",
@@ -36,4 +39,4 @@ data class User(
 
     @get:PropertyName("updated_at") @get:ServerTimestamp
     var updatedAt: Date? = null
-)
+) : Parcelable

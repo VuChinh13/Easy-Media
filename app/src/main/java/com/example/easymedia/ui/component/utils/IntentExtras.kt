@@ -13,4 +13,5 @@ object IntentExtras {
     const val EXTRA_POST_IMAGE = "extra_post_image"
     const val EXTRA_POST_ID = "extra_post_id"
     const val EXTRA_USER_NAME = "extra_user_name"
+    const val USER = "extra_user"
 }

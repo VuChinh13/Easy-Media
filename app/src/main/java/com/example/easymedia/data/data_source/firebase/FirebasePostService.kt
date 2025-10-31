@@ -10,6 +10,9 @@ import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import java.io.File
 
@@ -33,6 +36,7 @@ interface PostService {
         pageSize: Int,
         startAfterDoc: DocumentSnapshot? = null
     ): Pair<List<Post>, DocumentSnapshot?>
+
     suspend fun getPost(postId: String): Post?
     suspend fun getPostsByUser(userId: String): List<Post>
     suspend fun getAllPosts(): List<Post>
@@ -103,14 +107,19 @@ class FirebasePostService(
         caption: String,
         location: Location?,
         imageFiles: List<File>
-    ): String {
+    ): String = coroutineScope {
         // 1) Upload từng ảnh vào folder 'posts' (bạn có thể thay posts/$userId)
-        val results = imageFiles.map { f -> cloudinary.uploadImage(f, folder = "posts") }
+        // Chỗ này cần phải thực thi 1 cách song song, tức là có thể là upload
+        // nhiều ảnh cùng 1 lúc
+        val results = imageFiles.map { f ->
+            async { cloudinary.uploadImage(f, folder = "posts") }
+        }.awaitAll()
+
         val urls = results.map { it.secureUrl }
         val publicIds = results.map { it.publicId }
 
         // 2) Lưu vào Firestore
-        return createPost(
+        createPost(
             userId = userId,
             caption = caption,
             location = location,

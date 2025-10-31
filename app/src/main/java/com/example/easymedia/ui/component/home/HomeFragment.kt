@@ -11,11 +11,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.easymedia.R
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.FragmentHomeBinding
+import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation.setSlideAnimations
 import com.example.easymedia.ui.component.home.adapter.OnAvatarClickListener
 import com.example.easymedia.ui.component.home.adapter.PostAdapter
 import com.example.easymedia.ui.component.main.MainActivity
+import com.example.easymedia.ui.component.profile.ProfileFragment
+import com.example.easymedia.ui.component.utils.IntentExtras
 import com.example.easymedia.ui.component.utils.SharedPrefer
 
 /**
@@ -27,6 +31,7 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
     private lateinit var binding: FragmentHomeBinding
     private val homeViewModel: HomeViewModel by viewModels()
     private lateinit var postAdapter: PostAdapter
+    private var reload = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -42,7 +47,7 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
 
         // Khởi tạo adapter 1 lần
         SharedPrefer.updateContext(requireContext())
-        postAdapter = PostAdapter(emptyList(), test(), lifecycleScope)
+        postAdapter = PostAdapter(mutableListOf(), test(), lifecycleScope, this)
         binding.rvHome.apply {
             layoutManager =
                 LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
@@ -59,18 +64,23 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         // Quan sát dữ liệu bài viết
         homeViewModel.posts.observe(viewLifecycleOwner) { data ->
             (activity as MainActivity).hideLoading()
-
-            if (data.first.isNotEmpty()) {
-                // Gộp bài viết mới và bài viết cũ
-                postAdapter.addPosts(data.first) // 👈 chỉ thêm mới, không replace
+            // cần 1 biến để check xem là có phải là đang load lại không ấy
+            if (reload) {
+                postAdapter.updateData(data.first)
+                reload = false
             } else {
-                Toast.makeText(
-                    requireContext(),
-                    data.second.ifEmpty { "Đã có lỗi xảy ra" },
-                    Toast.LENGTH_SHORT
-                ).show()
+                if (data.first.isNotEmpty()) {
+                    // Gộp bài viết mới và bài viết cũ
+                    postAdapter.addPosts(data.first) // 👈 chỉ thêm mới, không replace
+                } else {
+                    Toast.makeText(
+                        requireContext(),
+                        data.second.ifEmpty { "Đã có lỗi xảy ra" },
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                binding.swipeRefresh.isRefreshing = false
             }
-            binding.swipeRefresh.isRefreshing = false
         }
 
         homeViewModel.fetchFirstPage()
@@ -96,7 +106,8 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
             val isAdded = bundle.getBoolean("isAdded")
             if (isAdded) {
                 // Gọi lại API load danh sách bài viết
-               homeViewModel.fetchFirstPage()
+                homeViewModel.refresh()
+                reload = true
             }
         }
 
@@ -106,8 +117,19 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         }
     }
 
-    override fun onAvatarClick(username: String) {
-        TODO("Not yet implemented")
+    // Chuyển sang màn khác
+    override fun onAvatarClick(user: User?) {
+        val profileFragment = ProfileFragment()
+        val bundle = Bundle().apply {
+            putParcelable(IntentExtras.USER, user)
+        }
+
+        profileFragment.arguments = bundle
+        val transaction = requireActivity().supportFragmentManager.beginTransaction()
+        transaction.setSlideAnimations()
+        transaction.add(R.id.fragment, profileFragment)
+        transaction.addToBackStack(null)
+        transaction.commit()
     }
 }
 
@@ -177,16 +199,3 @@ fun test(): List<User> {
     return testUsers
 }
 
-// Sự kiện nhấn vào Avatar -> sang màn trang cá nhân
-//    override fun onAvatarClick(username: String) {
-//        val profileFragment = ProfileFragment()
-//        val bundle = Bundle()
-//        bundle.putString(IntentExtras.EXTRA_USER_NAME, username)
-//        profileFragment.arguments = bundle
-//
-//        val transaction = requireActivity().supportFragmentManager.beginTransaction()
-//        transaction.setSlideAnimations()
-//        transaction.add(R.id.fragment, profileFragment)
-//        transaction.addToBackStack(null)
-//        transaction.commit()
-//    }

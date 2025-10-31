@@ -7,7 +7,7 @@
     android:paddingTop="10dp"
     android:paddingBottom="10dp"
     android:layout_height="match_parent"
-    tools:context=".ui.component.postdetail.PostDetailActivity">
+    tools:context="com.example.instagram.ui.component.postdetail.PostDetailActivity">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_my_post"

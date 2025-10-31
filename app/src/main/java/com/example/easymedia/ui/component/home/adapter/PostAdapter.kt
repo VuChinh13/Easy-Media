@@ -11,7 +11,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.LifecycleCoroutineScope
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
@@ -38,20 +37,21 @@ import kotlinx.coroutines.withContext
 // Trong adapter có hoạt động like, xem comment , hiển thị số like và số comment
 // like : cần postID
 // ..........
+// Làm thêm sự kiện là khi mà nhấn vào ảnh thì xung quanh bị mở đi và có thể
+// chuyển qua lại các màn này đi xem
 class PostAdapter(
-    var posts: List<Post>,
+    var posts: MutableList<Post>,
     private val listUser: List<User>,// danh sách người dùng -> để hiển thị như kiểu story
-    private val lifecycleCoroutineScope: LifecycleCoroutineScope
-//    private val listener: OnAvatarClickListener
-) :
-    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private val lifecycleCoroutineScope: LifecycleCoroutineScope,
+    private val listener: OnAvatarClickListener
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val postRepository =
         PostRepositoryImpl(FirebasePostService(cloudinary = CloudinaryServiceImpl()))
     private var context: Context? = null
     private val authRepository =
         AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
     private lateinit var storyAdapter: StoryAdapter
-    private val userCache = mutableMapOf<String, User?>()
+    private var user: User? = null
     private val userId = SharedPrefer.getId()
 
     companion object {
@@ -124,21 +124,25 @@ class PostAdapter(
                 tvTotalLike.text = post.counts.likes.toString()
             }
 
-            // Hiển thị những thông tin cần thiết lên UI
+            // Hiển thị những thông tin cần thiết lên
             lifecycleCoroutineScope.launch {
                 val result = authRepository.getUserById(post.userId)
-                result.onSuccess { user ->
+                result.onSuccess { it ->
                     withContext(Dispatchers.Main) {
+                        user = it
                         with(holder) {
-                            username.text = user?.username
+                            username.text = it?.username
                             Glide.with(itemView.context)
-                                .load(user?.profilePicture)
+                                .load(it?.profilePicture)
                                 .apply(RequestOptions().diskCacheStrategy(DiskCacheStrategy.ALL))
                                 .error(R.drawable.ic_avatar)
                                 .into(imageAvatar)
-
                             // sau khi mà load xong
                             hideShimmer(holder)
+                            // Khi mà thành
+                            imageAvatar.setOnClickListener {
+                                listener.onAvatarClick(user)
+                            }
                         }
                     }
                 }.onFailure {
@@ -219,13 +223,21 @@ class PostAdapter(
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    fun updateData(newPosts: List<Post>) {
-        val diffCallback = PostDiffCallback(posts, newPosts)
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
+//    @SuppressLint("NotifyDataSetChanged")
+//    fun updateData(newPosts: List<Post>) {
+//        val diffCallback = PostDiffCallback(posts, newPosts)
+//        val diffResult = DiffUtil.calculateDiff(diffCallback)
+//
+//        posts = newPosts.toMutableList()
+//        diffResult.dispatchUpdatesTo(this)
+//    }
 
-        posts = newPosts
-        diffResult.dispatchUpdatesTo(this)
+    // 👉 Hàm custom để cập nhật dữ liệu và gọi notifyDataSetChanged
+    @SuppressLint("NotifyDataSetChanged")
+    fun updateData(newItems: List<Post>) {
+        posts.clear()
+        posts.addAll(newItems)
+        notifyDataSetChanged() // Gọi ở đây
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -274,6 +286,6 @@ class PostAdapter(
 }
 
 interface OnAvatarClickListener {
-    fun onAvatarClick(username: String)
+    fun onAvatarClick(user: User?)
 }
 
