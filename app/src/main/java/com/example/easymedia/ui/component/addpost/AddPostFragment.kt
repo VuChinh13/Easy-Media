@@ -25,7 +25,6 @@ class AddPostFragment : Fragment() {
     private val addPostViewModel: AddPostViewModel by viewModels()
     private lateinit var binding: FragmentAddPostBinding
 
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -66,13 +65,12 @@ class AddPostFragment : Fragment() {
                     requireContext(),
                     "Đã chia sẻ thành công bài viết",
                     Toast.LENGTH_SHORT
-                )
-                    .show()
+                ).show()
                 parentFragmentManager.setFragmentResult(
                     "request_post_added",
                     bundleOf("isAdded" to true)
                 )
-                parentFragmentManager.popBackStack()
+                (activity as MainActivity).clearBackStackExceptFirst()
             } else {
                 (activity as MainActivity).hideLoading()
                 Toast.makeText(
@@ -81,13 +79,17 @@ class AddPostFragment : Fragment() {
                     Toast.LENGTH_SHORT
                 )
                     .show()
-                parentFragmentManager.popBackStack()
+                (activity as MainActivity).clearBackStackExceptFirst()
             }
         }
 
         binding.btShare.setOnClickListener {
             if (binding.etContent.text!!.isEmpty() || postImages.isEmpty()) {
-                Toast.makeText(requireContext(), "Hãy thêm nội dung và ảnh để hoàn thiện bài viết", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Hãy thêm nội dung và ảnh để hoàn thiện bài viết",
+                    Toast.LENGTH_SHORT
+                ).show()
             } else {
                 (activity as MainActivity).showLoading()
                 SharedPrefer.updateContext(requireContext())

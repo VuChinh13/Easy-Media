@@ -10,6 +10,7 @@ import com.example.easymedia.ui.component.addpost.AddPostFragment
 import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation.setSlideAnimations
 import com.example.easymedia.ui.component.home.HomeFragment
 import com.example.easymedia.ui.component.myprofile.MyProfileFragment
+import com.example.easymedia.ui.component.search.SearchFragment
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -41,35 +42,24 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-
         binding.btnMyProfile.setOnClickListener {
-            if (fragmentCurrent != "MyProfileFragment") {
+            switchScreenMyProfile()
+        }
+
+        binding.btnSearch.setOnClickListener {
+            if (fragmentCurrent != "SearchFragment") {
                 if (fragmentPre != "HomeFragment") fragmentPre = fragmentCurrent
-                val myProfileFragment = MyProfileFragment()
+                val searchFragment = SearchFragment()
                 val transactionMyProfileFragment = supportFragmentManager.beginTransaction()
-//                transactionMyProfileFragment.setSlideAnimations()
-                transactionMyProfileFragment.add(R.id.fragment, myProfileFragment)
+                transactionMyProfileFragment.setSlideAnimations()
+                transactionMyProfileFragment.add(R.id.fragment, searchFragment)
                 transactionMyProfileFragment.addToBackStack(null)
                 transactionMyProfileFragment.commit()
             }
         }
 
-
-//        binding.btnSearch.setOnClickListener {
-//            if (fragmentCurrent != "SearchFragment") {
-//                if (fragmentPre != "HomeFragment") fragmentPre = fragmentCurrent
-//                val searchFragment = SearchFragment()
-//                val transactionMyProfileFragment = supportFragmentManager.beginTransaction()
-//                transactionMyProfileFragment.setSlideAnimations()
-//                transactionMyProfileFragment.add(R.id.fragment, searchFragment)
-//                transactionMyProfileFragment.addToBackStack(null)
-//                transactionMyProfileFragment.commit()
-//            }
-//        }
-
-
         binding.btnHome.setOnClickListener {
-            if (fragmentCurrent == "AddPostFragment" || fragmentCurrent == "MyProfileFragment") {
+            if (fragmentCurrent == "AddPostFragment" || fragmentCurrent == "MyProfileFragment" || fragmentCurrent == "SearchFragment") {
                 for (i in 0 until countFragment) {
                     supportFragmentManager.popBackStack()
                 }
@@ -104,7 +94,12 @@ class MainActivity : AppCompatActivity() {
         binding.bottomBar.visibility = View.VISIBLE
     }
 
+    // Clear tất cả và chỉ đề lại 1 cái đầu tiên thôi
+    // cập nhật cả nhữn biến mà liên quan nữa
     fun clearBackStackExceptFirst() {
+        fragmentCurrent = "HomeFragment"
+        fragmentPre = "HomeFragment"
+        countFragment = 0
         val fm = supportFragmentManager
         if (fm.backStackEntryCount > 1) {
             val first = fm.getBackStackEntryAt(0)
@@ -112,4 +107,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun switchScreenMyProfile() {
+
+        if (fragmentCurrent != "MyProfileFragment") {
+            if (fragmentPre != "HomeFragment") fragmentPre = fragmentCurrent
+            val myProfileFragment = MyProfileFragment()
+            val transactionMyProfileFragment = supportFragmentManager.beginTransaction()
+            transactionMyProfileFragment.setSlideAnimations()
+            transactionMyProfileFragment.add(R.id.fragment, myProfileFragment)
+            transactionMyProfileFragment.addToBackStack(null)
+            transactionMyProfileFragment.commit()
+        }
+    }
 }

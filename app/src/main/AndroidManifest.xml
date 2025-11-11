@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -16,9 +19,12 @@
         android:theme="@style/Theme.EasyMedia"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
-        <!--        <activity-->
-        <!--            android:name=".ui.component.postdetail.PostDetailActivity"-->
-        <!--            android:exported="false" />-->
+        <activity
+            android:name=".ui.component.story.StoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.component.postdetail.PostDetailActivity"
+            android:exported="false" />
         <activity
             android:name=".ui.component.main.MainActivity"
             android:exported="true"
@@ -39,9 +45,6 @@
         <activity
             android:name=".ui.component.auth.AuthActivity"
             android:exported="true" />
-        <!--        <activity-->
-        <!--            android:name=".ui.component.updatepost.UpdatePostActivity"-->
-        <!--            android:exported="true" />-->
     </application>
 
 </manifest>

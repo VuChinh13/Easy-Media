@@ -1,5 +1,6 @@
 package com.example.easymedia.ui.component.home
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -19,6 +20,7 @@ import com.example.easymedia.ui.component.home.adapter.OnAvatarClickListener
 import com.example.easymedia.ui.component.home.adapter.PostAdapter
 import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.profile.ProfileFragment
+import com.example.easymedia.ui.component.story.StoryActivity
 import com.example.easymedia.ui.component.utils.IntentExtras
 import com.example.easymedia.ui.component.utils.SharedPrefer
 
@@ -47,7 +49,7 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
 
         // Khởi tạo adapter 1 lần
         SharedPrefer.updateContext(requireContext())
-        postAdapter = PostAdapter(mutableListOf(), test(), lifecycleScope, this)
+        postAdapter = PostAdapter(mutableListOf(), test(), lifecycleScope, this, this)
         binding.rvHome.apply {
             layoutManager =
                 LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
@@ -118,18 +120,28 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
     }
 
     // Chuyển sang màn khác
+    // Kiểm tra xem có phải là mình ko nếu mà là mình thì chuyển sang bên trang Fragment MyProfile
     override fun onAvatarClick(user: User?) {
-        val profileFragment = ProfileFragment()
-        val bundle = Bundle().apply {
-            putParcelable(IntentExtras.USER, user)
+        if (user?.id != SharedPrefer.getId()) {
+            val profileFragment = ProfileFragment()
+            val bundle = Bundle().apply {
+                putParcelable(IntentExtras.EXTRA_USER, user)
+            }
+            profileFragment.arguments = bundle
+            val transaction = requireActivity().supportFragmentManager.beginTransaction()
+            transaction.setSlideAnimations()
+            transaction.add(R.id.fragment, profileFragment)
+            transaction.addToBackStack(null)
+            transaction.commit()
+        } else {
+            // Chuyển sang bên trang đó là trang MyProfile
+            (activity as MainActivity).switchScreenMyProfile()
         }
+    }
 
-        profileFragment.arguments = bundle
-        val transaction = requireActivity().supportFragmentManager.beginTransaction()
-        transaction.setSlideAnimations()
-        transaction.add(R.id.fragment, profileFragment)
-        transaction.addToBackStack(null)
-        transaction.commit()
+    override fun onStoryClick() {
+        val intent = Intent(requireActivity(), StoryActivity::class.java)
+        startActivity(intent)
     }
 }
 

@@ -1,6 +1,7 @@
 package com.example.easymedia.ui.component.home.adapter
 
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -13,8 +14,10 @@ import com.example.easymedia.databinding.ItemFirstStoryBinding
 import com.example.easymedia.databinding.StoryItemBinding
 import com.example.easymedia.ui.component.utils.SharedPrefer
 
-class StoryAdapter(val listStory: List<User>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class StoryAdapter(val listStory: List<User>, val listenerStory: OnAvatarClickListener) :
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     lateinit var context: Context
+
     companion object {
         private const val VIEW_TYPE_FIRST = 0
         private const val VIEW_TYPE_NORMAL = 1
@@ -23,6 +26,7 @@ class StoryAdapter(val listStory: List<User>) : RecyclerView.Adapter<RecyclerVie
     class FirstStoryViewHolder(binding: ItemFirstStoryBinding) :
         RecyclerView.ViewHolder(binding.root) {
         val ivStory = binding.ivUserStory
+        val btnAddStory = binding.btnAddStory
     }
 
     class NormalStoryViewHolder(binding: StoryItemBinding) : RecyclerView.ViewHolder(binding.root) {
@@ -60,6 +64,11 @@ class StoryAdapter(val listStory: List<User>) : RecyclerView.Adapter<RecyclerVie
                     .error(R.drawable.ic_avatar)
                     .apply(RequestOptions().diskCacheStrategy(DiskCacheStrategy.ALL))
                     .into(ivStory)
+                btnAddStory.setOnClickListener {
+                    Log.d("ok", "ok day chu")
+                    // chuyển màn hình
+                    listenerStory.onStoryClick()
+                }
             } else if (this is NormalStoryViewHolder) {
                 Glide.with(itemView.context)
                     .load(listStory[position - 1].profilePicture)

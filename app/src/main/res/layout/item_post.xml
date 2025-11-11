@@ -71,9 +71,10 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="10dp"
         android:layout_marginTop="15dp"
+        android:visibility="gone"
         app:layout_constraintStart_toEndOf="@id/cardView"
         app:layout_constraintTop_toTopOf="parent"
-        app:shimmer_auto_start="true">
+        app:shimmer_auto_start="false">
 
         <!-- Placeholder mô phỏng TextView -->
         <View
@@ -219,7 +220,7 @@
         app:layout_constraintStart_toStartOf="@+id/tv_content"
         app:layout_constraintTop_toBottomOf="@+id/tv_content" />
 
-    <ImageView
+    <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/imageView7"
         android:layout_width="20dp"
         android:layout_height="30dp"
@@ -227,7 +228,7 @@
         app:layout_constraintBottom_toTopOf="@+id/viewPager"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_menu" />
+        app:srcCompat="@drawable/ic_menu_post" />
 
     <TextView
         android:id="@+id/textView14"

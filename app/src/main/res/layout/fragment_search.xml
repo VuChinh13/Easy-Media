@@ -1,41 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:background="@color/white"
     android:padding="10dp"
-    android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".ui.component.search.SearchFragment">
 
-<!--    <androidx.appcompat.widget.SearchView-->
-<!--        android:layout_marginTop="10dp"-->
-<!--        android:layout_marginRight="10dp"-->
-<!--        android:layout_marginLeft="10dp"-->
-<!--        android:id="@+id/searchView"-->
-<!--        app:layout_constraintTop_toTopOf="parent"-->
-<!--        app:layout_constraintRight_toRightOf="parent"-->
-<!--        app:layout_constraintLeft_toLeftOf="parent"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:background="@drawable/bg_search_view"-->
-<!--        android:layout_height="55dp"-->
-<!--        app:iconifiedByDefault="true"-->
-<!--        app:queryHint="Tìm kiếm..." />-->
+    <!--    <androidx.appcompat.widget.SearchView-->
+    <!--        android:layout_marginTop="10dp"-->
+    <!--        android:layout_marginRight="10dp"-->
+    <!--        android:layout_marginLeft="10dp"-->
+    <!--        android:id="@+id/searchView"-->
+    <!--        app:layout_constraintTop_toTopOf="parent"-->
+    <!--        app:layout_constraintRight_toRightOf="parent"-->
+    <!--        app:layout_constraintLeft_toLeftOf="parent"-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:background="@drawable/bg_search_view"-->
+    <!--        android:layout_height="55dp"-->
+    <!--        app:iconifiedByDefault="true"-->
+    <!--        app:queryHint="Tìm kiếm..." />-->
 
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/btnClose"
+        android:layout_width="40dp"
+        android:layout_height="30dp"
+        android:layout_marginTop="20dp"
+        android:src="@drawable/ic_backarrow"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:text="Tìm kiếm người dùng"
+        android:textColor="@color/black"
+        android:textSize="20dp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/btnClose"
+        app:layout_constraintLeft_toRightOf="@id/btnClose"
+        app:layout_constraintTop_toTopOf="@id/btnClose" />
 
     <AutoCompleteTextView
         android:id="@+id/actv_user"
-        android:layout_width="match_parent"
-        android:layout_height="55dp"
-        android:completionThreshold="1"
-        android:paddingLeft="10dp"
-        android:hint="Nhập tên người dùng"
-        android:textSize="15sp"
-        android:imeOptions="actionDone"
+        android:layout_width="0dp"
+        android:layout_height="45dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginRight="10dp"
         android:background="@drawable/bg_search_view"
+        android:completionThreshold="1"
+        android:hint="Nhập tên người dùng"
+        android:imeOptions="actionDone"
         android:inputType="textPersonName"
+        android:paddingLeft="10dp"
+        android:dropDownHorizontalOffset="-10dp"
+        android:popupBackground="@drawable/bg_dropdown_custom"
+        android:textSize="15sp"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/textView2" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="Mới đây"
+        android:textColor="@color/black"
+        android:textSize="15dp"
+        android:textStyle="bold"
+        app:layout_constraintLeft_toLeftOf="@id/actv_user"
+        app:layout_constraintTop_toBottomOf="@id/actv_user" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rcvHistoryUser"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="@id/actv_user"
+        app:layout_constraintRight_toRightOf="@id/actv_user"
+        app:layout_constraintTop_toBottomOf="@id/textView">
+
+    </androidx.recyclerview.widget.RecyclerView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

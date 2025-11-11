@@ -19,6 +19,10 @@ import com.example.easymedia.ui.component.myprofile.adapter.MyPostAdapter
 import com.example.easymedia.ui.component.splash.SplashActivity
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import androidx.core.content.edit
+import com.example.easymedia.data.model.Post
+import com.example.easymedia.ui.component.addpost.AddPostFragment
+import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation.setSlideAnimations
+import com.example.easymedia.ui.component.search.SearchFragment
 import com.example.easymedia.ui.component.updateinformation.UpdateInformationFragment
 import com.example.easymedia.ui.component.utils.IntentExtras
 
@@ -27,6 +31,7 @@ class MyProfileFragment : Fragment() {
     private val myProfileViewModel: MyProfileViewModel by viewModels()
     private var inforUserResponse: User? = null
     private lateinit var myPostAdapter: MyPostAdapter
+    private var listPost = mutableListOf<Post>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -47,6 +52,8 @@ class MyProfileFragment : Fragment() {
         val uid = SharedPrefer.getId()
         myProfileViewModel.getInforUser(uid)
         myProfileViewModel.getUserPosts(uid)
+        myPostAdapter =
+            MyPostAdapter(requireActivity(), mutableListOf())
 
 
         // Chuyển sang chỉnh sửa Profile
@@ -83,15 +90,15 @@ class MyProfileFragment : Fragment() {
             if (result.isEmpty()) {
                 binding.tvTitle1.visibility = View.VISIBLE
                 binding.tvTitle2.visibility = View.VISIBLE
-                binding.btnTao.visibility = View.VISIBLE
+                binding.btnCreatePost.visibility = View.VISIBLE
                 (activity as MainActivity).hideLoading()
             } else {
                 binding.tvTitle1.visibility = View.GONE
                 binding.tvTitle2.visibility = View.GONE
-                binding.btnTao.visibility = View.GONE
+                binding.btnCreatePost.visibility = View.GONE
+                listPost.addAll(result)
                 (activity as MainActivity).hideLoading()
-                myPostAdapter =
-                    MyPostAdapter(requireActivity(), result)
+                myPostAdapter.updateListPost(result)
                 binding.rvMyPost.layoutManager = GridLayoutManager(requireContext(), 3)
                 binding.rvMyPost.adapter = myPostAdapter
             }
@@ -103,6 +110,7 @@ class MyProfileFragment : Fragment() {
             Glide.with(this).load(result?.profilePicture)
                 .error(R.drawable.ic_avatar)
                 .into(binding.ivAvatar)
+            myPostAdapter.updateUser(result)
             binding.tvName.text = result?.fullName
             binding.tvUsername.text = result?.username
             binding.tvTotalPost.text = result?.postCount.toString()
@@ -144,6 +152,16 @@ class MyProfileFragment : Fragment() {
                     .supportFragmentManager
                     .popBackStack()
             }
+        }
+
+        // Taọ bài viết khi mà chưa có bài viết nảo cả
+        binding.btnCreatePost.setOnClickListener {
+            val searchFragment = AddPostFragment()
+            val transactionMyProfileFragment = requireActivity().supportFragmentManager.beginTransaction()
+            transactionMyProfileFragment.setSlideAnimations()
+            transactionMyProfileFragment.add(R.id.fragment, searchFragment)
+            transactionMyProfileFragment.addToBackStack(null)
+            transactionMyProfileFragment.commit()
         }
 
         requireActivity()

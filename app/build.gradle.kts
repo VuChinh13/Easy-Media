@@ -36,12 +36,17 @@ android {
         jvmTarget = "11"
     }
     buildFeatures {
+        dataBinding = true
         viewBinding = true
     }
 }
 
 dependencies {
-
+    implementation("androidx.palette:palette:1.0.0")
+    implementation("com.github.chrisbanes:PhotoView:2.3.0")
+    implementation("io.github.parksanggwon:tedimagepicker:1.7.3")
+    implementation("com.antonkarpenko:ffmpeg-kit-full-gpl:2.1.0")
+    implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.tbuonomo:dotsindicator:5.0")
     implementation("com.facebook.shimmer:shimmer:0.5.0")
     // Firebase BoM
@@ -52,6 +57,8 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-analytics")
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.cardview)
 
     // AndroidX & UI
     val fragment_version = "1.8.3"

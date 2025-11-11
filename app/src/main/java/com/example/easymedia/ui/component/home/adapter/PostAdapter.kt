@@ -43,7 +43,8 @@ class PostAdapter(
     var posts: MutableList<Post>,
     private val listUser: List<User>,// danh sách người dùng -> để hiển thị như kiểu story
     private val lifecycleCoroutineScope: LifecycleCoroutineScope,
-    private val listener: OnAvatarClickListener
+    private val listener: OnAvatarClickListener,
+    private val listenerStory: OnAvatarClickListener
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val postRepository =
         PostRepositoryImpl(FirebasePostService(cloudinary = CloudinaryServiceImpl()))
@@ -51,7 +52,6 @@ class PostAdapter(
     private val authRepository =
         AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
     private lateinit var storyAdapter: StoryAdapter
-    private var user: User? = null
     private val userId = SharedPrefer.getId()
 
     companion object {
@@ -101,7 +101,7 @@ class PostAdapter(
         Log.d("AdapterDebug", "onBind position=$position, postCount=${posts.size}")
         if (holder is FirstPostViewHolder) {
             Log.d("AdapterDebug", "ok")
-            storyAdapter = StoryAdapter(listUser)
+            storyAdapter = StoryAdapter(listUser, listenerStory)
             holder.rcvStory.setHasFixedSize(true)
             holder.rcvStory.layoutManager =
                 LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
@@ -127,13 +127,13 @@ class PostAdapter(
             // Hiển thị những thông tin cần thiết lên
             lifecycleCoroutineScope.launch {
                 val result = authRepository.getUserById(post.userId)
-                result.onSuccess { it ->
+                result.onSuccess { user ->
                     withContext(Dispatchers.Main) {
-                        user = it
+//                        user = it
                         with(holder) {
-                            username.text = it?.username
+                            username.text = user?.username
                             Glide.with(itemView.context)
-                                .load(it?.profilePicture)
+                                .load(user?.profilePicture)
                                 .apply(RequestOptions().diskCacheStrategy(DiskCacheStrategy.ALL))
                                 .error(R.drawable.ic_avatar)
                                 .into(imageAvatar)
@@ -141,6 +141,9 @@ class PostAdapter(
                             hideShimmer(holder)
                             // Khi mà thành
                             imageAvatar.setOnClickListener {
+                                listener.onAvatarClick(user)
+                            }
+                            username.setOnClickListener {
                                 listener.onAvatarClick(user)
                             }
                         }
@@ -287,5 +290,6 @@ class PostAdapter(
 
 interface OnAvatarClickListener {
     fun onAvatarClick(user: User?)
+    fun onStoryClick()
 }
 

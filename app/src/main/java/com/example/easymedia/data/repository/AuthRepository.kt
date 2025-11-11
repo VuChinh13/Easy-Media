@@ -22,6 +22,7 @@ interface AuthRepository {
     fun currentUid(): String?
     suspend fun getUserById(uid: String): Result<User?>
     suspend fun getUsersByIds(uids: List<String>): List<User>
+    suspend fun getAllUsers(): List<User>
     suspend fun updateUserProfile(
         uid: String,
         fullName: String?,
@@ -88,6 +89,8 @@ class AuthRepositoryImpl(
         runCatching { service.getUserById(uid) }
 
     override suspend fun getUsersByIds(uids: List<String>): List<User> = service.getUsersByIds(uids)
+    override suspend fun getAllUsers(): List<User> = service.getAllUsers()
+
     override suspend fun updateUserProfile(
         uid: String,
         fullName: String?,

@@ -9,4 +9,9 @@
     <style name="Theme.EasyMedia.NoSplash" parent="Base.Theme.EasyMedia">
       <item name="android:windowIsTranslucent">true</item>
     </style>
+
+    <style name="MySearchViewStyle" parent="Widget.AppCompat.SearchView">
+        <item name="android:textColorHint">@color/white</item>
+        <item name="editTextColor">@color/white</item>
+    </style>
 </resources>

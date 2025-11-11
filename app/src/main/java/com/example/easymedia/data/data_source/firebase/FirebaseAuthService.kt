@@ -6,7 +6,10 @@ import com.example.easymedia.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import java.io.File
 
 interface AuthService {
@@ -18,6 +21,7 @@ interface AuthService {
     suspend fun signIn(email: String, password: String): String
     suspend fun getUserById(uid: String): User?
     fun signOut()
+    suspend fun getAllUsers(): List<User>
     suspend fun getUsersByIds(uids: List<String>): List<User>
     fun currentUid(): String?
     suspend fun updateUserProfile(
@@ -104,52 +108,66 @@ class FirebaseAuthService(private val cloudinary: CloudinaryService) : AuthServi
         fullName: String?,
         bio: String?,
         location: String?,
-        profilePicture: File?, // 🔹 đổi từ String? → File?
+        profilePicture: File?, // File local
         gender: String?
     ) {
-        val updates = mutableMapOf<String, Any?>()
-
-        fullName?.let { updates["full_name"] = it }
-        bio?.let { updates["bio"] = it }
-        location?.let { updates["location"] = it }
-        gender?.let { updates["gender"] = it }
-
-        // Cập nhật thời gian
-        updates["updated_at"] = FieldValue.serverTimestamp()
-
-        // 🔹 Nếu có ảnh mới → upload ảnh lên Cloudinary
-        if (profilePicture != null) {
+        withContext(Dispatchers.IO) { // đảm bảo I/O chạy trên thread nền
             val userRef = db.collection("users").document(uid)
+            val updates = mutableMapOf<String, Any?>()
 
-            // Lấy public_id cũ (nếu có) để xóa sau
-            val currentData = userRef.get().await().data
-            val oldPublicId = currentData?.get("profile_picture_public_id") as? String
+            fullName?.let { updates["full_name"] = it }
+            bio?.let { updates["bio"] = it }
+            location?.let { updates["location"] = it }
+            gender?.let { updates["gender"] = it }
+            updates["updated_at"] = FieldValue.serverTimestamp()
 
-            // Upload ảnh mới
-            val uploadResult = cloudinary.uploadImage(profilePicture, folder = "profiles/$uid")
-            updates["profile_picture"] = uploadResult.secureUrl
-            updates["profile_picture_public_id"] = uploadResult.publicId
+            if (profilePicture != null) {
+                // Lấy dữ liệu cũ (đồng bộ Firestore)
+                val currentData = userRef.get().await().data
+                val oldPublicId = currentData?.get("profile_picture_public_id") as? String
 
-            // Cập nhật Firestore trước
-            userRef.update(updates).await()
+                // Upload ảnh mới (I/O)
+                val uploadResult = cloudinary.uploadImage(profilePicture, folder = "profiles/$uid")
 
-            // 🔹 Sau đó xóa ảnh cũ (nếu có)
-            if (!oldPublicId.isNullOrEmpty()) {
-                try {
-                    val success = cloudinary.deleteImage(oldPublicId)
-                    if (!success) {
-                        Log.w(
-                            "FirebaseUserService",
-                            "Failed to delete old Cloudinary image: $oldPublicId"
-                        )
+                // Cập nhật đường dẫn ảnh mới
+                updates["profile_picture"] = uploadResult.secureUrl
+                updates["profile_picture_public_id"] = uploadResult.publicId
+
+                // Cập nhật Firestore
+                userRef.update(updates).await()
+
+                // Xóa ảnh cũ — KHÔNG chờ (song song)
+                if (!oldPublicId.isNullOrEmpty()) {
+                    launch(Dispatchers.IO) {
+                        try {
+                            val success = cloudinary.deleteImage(oldPublicId)
+                            if (!success) {
+                                Log.w(
+                                    "FirebaseStoryService",
+                                    "Failed to delete old Cloudinary image: $oldPublicId"
+                                )
+                            }
+                        } catch (e: Exception) {
+                            Log.w("FirebaseStoryService", "Error deleting old image: ${e.message}")
+                        }
                     }
-                } catch (e: Exception) {
-                    Log.w("FirebaseUserService", "Error deleting old image: ${e.message}")
                 }
+            } else {
+                // Không có ảnh mới → chỉ update thông tin text
+                userRef.update(updates).await()
             }
-        } else {
-            // 🔹 Không có ảnh mới → chỉ update text fields
-            db.collection("users").document(uid).update(updates).await()
+        }
+    }
+
+    override suspend fun getAllUsers(): List<User> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val snapshot = db.collection("users").get().await()
+                snapshot.toObjects(User::class.java)
+            } catch (e: Exception) {
+                Log.e("FirebaseAuthService", "Error getting all users: ${e.message}")
+                emptyList()
+            }
         }
     }
 

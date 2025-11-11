@@ -7,6 +7,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.GridLayoutManager
+import com.bumptech.glide.Glide
+import com.example.easymedia.R
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.FragmentProfileBinding
 import com.example.easymedia.ui.component.main.MainActivity
@@ -27,11 +29,12 @@ class ProfileFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-
+        (activity as MainActivity).hideLoading()
         // Nhận dữ liệu khi mà truyền sang
-        val user = arguments?.getParcelable<User>(IntentExtras.USER)
+        val user = arguments?.getParcelable<User>(IntentExtras.EXTRA_USER)
         myProfileViewModel.getUserPosts(user!!.id)
 
+        binding.shimmerUsername.startShimmer()
         // hiển thị lên trên UI
         binding.tvName.text = user.username
         binding.tvTotalPost.text = user.postCount.toString()
@@ -39,17 +42,26 @@ class ProfileFragment : Fragment() {
         binding.tvUsername.text = user.username
         binding.tvTotalFollowers.text = user.followers.toString()
         binding.tvTotalFollowing.text = user.following.toString()
+        Glide.with(this).load(user.profilePicture).error(R.drawable.ic_avatar)
+            .into(binding.ivAvatar)
 
+        postAdapter = ProfileAdapter(requireActivity(), mutableListOf())
+        binding.rvMyPost.layoutManager = GridLayoutManager(requireContext(), 3)
+        binding.rvMyPost.adapter = postAdapter
+        postAdapter.updateUser(user)
 
         // Lắng nghe sự kiện khi mà lấy được tất cả bài viết của người dùng
         myProfileViewModel.getUserPostsResult.observe(viewLifecycleOwner) { result ->
-            (activity as MainActivity).hideLoading()
-
+            binding.shimmerUsername.stopShimmer()
+            binding.shimmerUsername.visibility = View.INVISIBLE
             if (result.isNotEmpty()) {
-                postAdapter = ProfileAdapter(requireActivity(), result)
-                binding.rvMyPost.layoutManager = GridLayoutManager(requireContext(), 3)
-                binding.rvMyPost.adapter = postAdapter
+                postAdapter.updateListPost(result)
             }
+        }
+
+        // khi mà quay về thì làm thế nào nhể hay là chỉ là quay về trang trước như là bình thường
+        binding.btnClose.setOnClickListener {
+            parentFragmentManager.popBackStack()
         }
     }
 }
