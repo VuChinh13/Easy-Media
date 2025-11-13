@@ -22,12 +22,14 @@ import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
 import com.example.easymedia.data.data_source.firebase.FirebaseAuthService
 import com.example.easymedia.data.data_source.firebase.FirebasePostService
 import com.example.easymedia.data.model.Post
+import com.example.easymedia.data.model.Story
 import com.example.easymedia.data.model.User
 import com.example.easymedia.data.repository.AuthRepositoryImpl
 import com.example.easymedia.data.repository.PostRepositoryImpl
 import com.example.easymedia.databinding.ItemFirstPostBinding
 import com.example.easymedia.databinding.ItemPostBinding
 import com.example.easymedia.ui.component.comment.CommentBottomSheet
+import com.example.easymedia.ui.component.home.OnAvatarClickListener
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import com.example.easymedia.ui.component.utils.TimeFormatter
 import kotlinx.coroutines.Dispatchers
@@ -41,17 +43,15 @@ import kotlinx.coroutines.withContext
 // chuyển qua lại các màn này đi xem
 class PostAdapter(
     var posts: MutableList<Post>,
-    private val listUser: List<User>,// danh sách người dùng -> để hiển thị như kiểu story
     private val lifecycleCoroutineScope: LifecycleCoroutineScope,
     private val listener: OnAvatarClickListener,
-    private val listenerStory: OnAvatarClickListener
+    private val storyAdapter: StoryAdapter
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val postRepository =
         PostRepositoryImpl(FirebasePostService(cloudinary = CloudinaryServiceImpl()))
     private var context: Context? = null
     private val authRepository =
         AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
-    private lateinit var storyAdapter: StoryAdapter
     private val userId = SharedPrefer.getId()
 
     companion object {
@@ -98,10 +98,7 @@ class PostAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        Log.d("AdapterDebug", "onBind position=$position, postCount=${posts.size}")
         if (holder is FirstPostViewHolder) {
-            Log.d("AdapterDebug", "ok")
-            storyAdapter = StoryAdapter(listUser, listenerStory)
             holder.rcvStory.setHasFixedSize(true)
             holder.rcvStory.layoutManager =
                 LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
@@ -125,7 +122,7 @@ class PostAdapter(
             }
 
             // Hiển thị những thông tin cần thiết lên
-            lifecycleCoroutineScope.launch {
+            lifecycleCoroutineScope.launch(Dispatchers.IO) {
                 val result = authRepository.getUserById(post.userId)
                 result.onSuccess { user ->
                     withContext(Dispatchers.Main) {
@@ -156,7 +153,7 @@ class PostAdapter(
             }
 
             // hiển thị tym đỏ
-            lifecycleCoroutineScope.launch {
+            lifecycleCoroutineScope.launch(Dispatchers.IO) {
                 val result = postRepository.hasUserLiked(post.id, userId)
                 result.onSuccess {
                     if (it) {
@@ -210,7 +207,7 @@ class PostAdapter(
             holder.tvTotalLike.text = post.counts.likes.toString()
 
             // Gọi API theo trạng thái mới
-            lifecycleCoroutineScope.launch {
+            lifecycleCoroutineScope.launch(Dispatchers.IO) {
                 val result = if (liked) {
                     postRepository.likePost(post.id, userId)
                 } else {
@@ -287,9 +284,3 @@ class PostAdapter(
         }
     }
 }
-
-interface OnAvatarClickListener {
-    fun onAvatarClick(user: User?)
-    fun onStoryClick()
-}
-

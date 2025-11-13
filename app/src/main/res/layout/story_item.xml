@@ -11,8 +11,8 @@
         android:id="@+id/cl1"
         android:layout_width="94dp"
         android:layout_height="94dp"
-        android:padding="4dp"
         android:background="@drawable/bg_story"
+        android:padding="4dp"
         app:layout_constraintBottom_toBottomOf="@id/guideline_half"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/guideline_half">
@@ -51,7 +51,6 @@
         android:layout_height="wrap_content"
         android:fontFamily="sans-serif-medium"
         android:gravity="center_horizontal"
-        android:text="Tin của a"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent" />

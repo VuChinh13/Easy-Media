@@ -16,4 +16,6 @@ object IntentExtras {
     const val EXTRA_USER = "extra_user"
     const val EXTRA_LIST_POST = "extra_list_post"
     const val EXTRA_POSITION = "extra_position"
+    const val RESULT_DATA = "result_data"
+    const val EXTRA_DATA_STORY = "extra_data_story"
 }

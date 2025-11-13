@@ -1,11 +1,15 @@
 package com.example.easymedia.ui.component.home
 
+import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -13,16 +17,18 @@ import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.easymedia.R
+import com.example.easymedia.data.model.Story
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.FragmentHomeBinding
 import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation.setSlideAnimations
-import com.example.easymedia.ui.component.home.adapter.OnAvatarClickListener
 import com.example.easymedia.ui.component.home.adapter.PostAdapter
+import com.example.easymedia.ui.component.home.adapter.StoryAdapter
 import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.profile.ProfileFragment
 import com.example.easymedia.ui.component.story.StoryActivity
 import com.example.easymedia.ui.component.utils.IntentExtras
 import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.component.viewstory.ViewStoryActivity
 
 /**
  * Xử lí việc phân trang
@@ -33,7 +39,21 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
     private lateinit var binding: FragmentHomeBinding
     private val homeViewModel: HomeViewModel by viewModels()
     private lateinit var postAdapter: PostAdapter
+    private lateinit var storyAdapter: StoryAdapter
     private var reload = false
+
+    private val launcher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result: ActivityResult ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data
+            val isSucceeds = data?.getBooleanExtra(IntentExtras.RESULT_DATA, false)
+            // xử lí khi mà thành công
+            if (isSucceeds == true) {
+                homeViewModel.getAllStories()
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -49,7 +69,8 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
 
         // Khởi tạo adapter 1 lần
         SharedPrefer.updateContext(requireContext())
-        postAdapter = PostAdapter(mutableListOf(), test(), lifecycleScope, this, this)
+        storyAdapter = StoryAdapter(mutableListOf(Story()), this, lifecycleScope)
+        postAdapter = PostAdapter(mutableListOf(), lifecycleScope, this, storyAdapter)
         binding.rvHome.apply {
             layoutManager =
                 LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
@@ -86,6 +107,7 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         }
 
         homeViewModel.fetchFirstPage()
+        homeViewModel.getAllStories()
 
         binding.rvHome.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
@@ -98,7 +120,6 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
                 }
             }
         })
-
 
         // Load lại dữ liệu
         parentFragmentManager.setFragmentResultListener(
@@ -116,6 +137,13 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         // 🔹 Refresh để load lại
         binding.swipeRefresh.setOnRefreshListener {
             homeViewModel.refresh()
+        }
+
+        // hiển thị giao diện Story
+        homeViewModel.story.observe(viewLifecycleOwner) {
+            Log.d("CheckListStory", it.toString())
+            storyAdapter.updateListStory(it)
+            postAdapter.notifyItemChanged(0)
         }
     }
 
@@ -141,73 +169,20 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
 
     override fun onStoryClick() {
         val intent = Intent(requireActivity(), StoryActivity::class.java)
+        launcher.launch(intent)
+    }
+
+    override fun switchScreenStory(listStory: List<Story>) {
+        val intent = Intent(requireActivity(), ViewStoryActivity::class.java)
+        intent.putParcelableArrayListExtra(IntentExtras.EXTRA_DATA_STORY, ArrayList(listStory))
         startActivity(intent)
     }
 }
 
-fun test(): List<User> {
-    val testUsers = listOf(
-        User(
-            id = "u1",
-            username = "alice",
-            fullName = "Alice Nguyen",
-            profilePicture = "https://randomuser.me/api/portraits/women/1.jpg"
-        ),
-        User(
-            id = "u2",
-            username = "bob",
-            fullName = "Bob Tran",
-            profilePicture = "https://randomuser.me/api/portraits/men/2.jpg"
-        ),
-        User(
-            id = "u3",
-            username = "charlie",
-            fullName = "Charlie Le",
-            profilePicture = "https://randomuser.me/api/portraits/men/3.jpg"
-        ),
-        User(
-            id = "u4",
-            username = "daisy",
-            fullName = "Daisy Pham",
-            profilePicture = "https://randomuser.me/api/portraits/women/4.jpg"
-        ),
-        User(
-            id = "u5",
-            username = "edward",
-            fullName = "Edward Hoang",
-            profilePicture = "https://randomuser.me/api/portraits/men/5.jpg"
-        ),
-        User(
-            id = "u6",
-            username = "fiona",
-            fullName = "Fiona Nguyen",
-            profilePicture = "https://randomuser.me/api/portraits/women/6.jpg"
-        ),
-        User(
-            id = "u7",
-            username = "george",
-            fullName = "George Phan",
-            profilePicture = "https://randomuser.me/api/portraits/men/7.jpg"
-        ),
-        User(
-            id = "u8",
-            username = "hannah",
-            fullName = "Hannah Vo",
-            profilePicture = "https://randomuser.me/api/portraits/women/8.jpg"
-        ),
-        User(
-            id = "u9",
-            username = "ivan",
-            fullName = "Ivan Bui",
-            profilePicture = "https://randomuser.me/api/portraits/men/9.jpg"
-        ),
-        User(
-            id = "u10",
-            username = "julia",
-            fullName = "Julia Dang",
-            profilePicture = "https://randomuser.me/api/portraits/women/10.jpg"
-        )
-    )
-    return testUsers
+interface OnAvatarClickListener {
+    fun onAvatarClick(user: User?)
+    fun onStoryClick()
+    fun switchScreenStory(listStory: List<Story>)
 }
+
 

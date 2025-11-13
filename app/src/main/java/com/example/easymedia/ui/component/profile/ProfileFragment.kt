@@ -36,7 +36,7 @@ class ProfileFragment : Fragment() {
 
         binding.shimmerUsername.startShimmer()
         // hiển thị lên trên UI
-        binding.tvName.text = user.username
+        binding.tvName.text = user.fullName
         binding.tvTotalPost.text = user.postCount.toString()
         binding.tvIntroduce.text = user.bio
         binding.tvUsername.text = user.username

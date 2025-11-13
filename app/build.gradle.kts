@@ -42,6 +42,7 @@ android {
 }
 
 dependencies {
+    implementation("com.github.shts:StoriesProgressView:2.0.0")
     implementation("androidx.palette:palette:1.0.0")
     implementation("com.github.chrisbanes:PhotoView:2.3.0")
     implementation("io.github.parksanggwon:tedimagepicker:1.7.3")
@@ -83,4 +84,5 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
 }

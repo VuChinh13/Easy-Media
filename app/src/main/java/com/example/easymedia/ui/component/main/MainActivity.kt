@@ -1,5 +1,6 @@
 package com.example.easymedia.ui.component.main
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -108,7 +109,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun switchScreenMyProfile() {
-
         if (fragmentCurrent != "MyProfileFragment") {
             if (fragmentPre != "HomeFragment") fragmentPre = fragmentCurrent
             val myProfileFragment = MyProfileFragment()

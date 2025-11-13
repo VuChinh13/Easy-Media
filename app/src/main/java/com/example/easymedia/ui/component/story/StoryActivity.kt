@@ -1,50 +1,61 @@
 package com.example.easymedia.ui.component.story
 
 import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
-import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
-import android.widget.EditText
 import android.widget.MediaController
 import android.widget.TextView
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.toColorInt
 import androidx.palette.graphics.Palette
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.example.easymedia.R
+import com.example.easymedia.data.model.Music
+import com.example.easymedia.data.model.Story
 import com.example.easymedia.data.model.VideoEditState
 import com.example.easymedia.databinding.ActivityStoryBinding
 import com.example.easymedia.ui.component.music.MusicBottomSheet
+import com.example.easymedia.ui.component.utils.IntentExtras
+import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.component.utils.SharedPrefer.context
 import gun0912.tedimagepicker.builder.TedImagePicker
 import gun0912.tedimagepicker.builder.type.MediaType
-import kotlin.getValue
-
+import java.io.File
+import java.io.FileOutputStream
 
 class StoryActivity : AppCompatActivity() {
     private val storyViewModel: StoryViewModel by viewModels()
+    private var success = false
     private lateinit var binding: ActivityStoryBinding
     private var overlayTextView: TextView? = null
     private var videoEditState = VideoEditState() // trạng thái mặc định
     private var selectedUri: Uri? = null
     private var isMuted = false
+    private var mediaPlayer: MediaPlayer? = null
     private var textStyleSelected = "lato"
-    private val bottomSheet = MusicBottomSheet()
+    private var musicSelected: Music? = null
+    private val bottomSheet = MusicBottomSheet { music ->
+        finishChooseMusic(music)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,7 +63,90 @@ class StoryActivity : AppCompatActivity() {
         setContentView(binding.root)
         setupUI()
 
-        binding.btnClose.setOnClickListener { finish() }
+        binding.btnSharedStory.setOnClickListener {
+            binding.btnSharedStory.visibility = View.GONE
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
+            binding.loading.visibility = View.VISIBLE
+            // Tạo đối tượng Story
+            val userId = SharedPrefer.getId()
+            val story = Story(userId = userId, music = musicSelected)
+            binding.blockImage.post {
+                val bitmap = captureBlockImage()
+                if (bitmap != null) {
+                    storyViewModel.uploadStory(story, bitmapToFile(this, bitmap))
+                }
+            }
+        }
+
+        storyViewModel.finish.observe(this) {
+            if (it) {
+                binding.loading.visibility = View.GONE
+                val resultIntent = intent
+                success = true
+                resultIntent.putExtra(IntentExtras.RESULT_DATA, success)
+                setResult(RESULT_OK, resultIntent)
+                finish()
+            }
+        }
+    }
+
+    // hàm này dùng để mà lưu ảnh vào bên trong máy
+    private fun saveBitmapToGallery(bitmap: Bitmap) {
+        val filename = "story_${System.currentTimeMillis()}.png"
+
+        // Tạo thông tin file để MediaStore quản lý
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/AppMedia") // thư mục trong Gallery
+            put(MediaStore.Images.Media.IS_PENDING, 1) // tạm thời để ghi xong mới hiển thị
+        }
+
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+
+        uri?.let { imageUri ->
+            resolver.openOutputStream(imageUri)?.use { outStream ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, outStream)
+            }
+
+            // Ghi xong, đánh dấu ảnh hoàn tất để hiển thị trong Gallery
+            values.clear()
+            values.put(MediaStore.Images.Media.IS_PENDING, 0)
+            resolver.update(imageUri, values, null, null)
+        }
+    }
+
+    private fun captureBlockImage(): Bitmap? {
+        val view = binding.blockImage
+
+        // Kiểm tra view đã có kích thước
+        if (view.width == 0 || view.height == 0) return null
+
+        // Tạo bitmap cùng kích thước với view
+        val bitmap = createBitmap(view.width, view.height)
+
+        // Tạo canvas từ bitmap
+        val canvas = Canvas(bitmap)
+
+        // Vẽ view lên canvas (bao gồm tất cả view con bên trong)
+        view.draw(canvas)
+
+        return bitmap
+    }
+
+    fun bitmapToFile(context: Context, bitmap: Bitmap): File {
+        // Tạo file tạm trong thư mục cache
+        val file = File(context.cacheDir, "story_${System.currentTimeMillis()}.png")
+
+        // Ghi bitmap ra file
+        FileOutputStream(file).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        }
+
+        return file
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -77,10 +171,32 @@ class StoryActivity : AppCompatActivity() {
 
         binding.btnAddText.setOnClickListener {
             hideAddText()
-//            showAddTextDialog()
         }
 
         binding.etEditableText.setOnTouchListener(object : View.OnTouchListener {
+            private var dX = 0f
+            private var dY = 0f
+
+            override fun onTouch(view: View, event: MotionEvent): Boolean {
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        dX = view.x - event.rawX
+                        dY = view.y - event.rawY
+                    }
+
+                    MotionEvent.ACTION_MOVE -> {
+                        view.animate()
+                            .x(event.rawX + dX)
+                            .y(event.rawY + dY)
+                            .setDuration(0)
+                            .start()
+                    }
+                }
+                return true
+            }
+        })
+
+        binding.blockMusic.setOnTouchListener(object : View.OnTouchListener {
             private var dX = 0f
             private var dY = 0f
 
@@ -156,11 +272,12 @@ class StoryActivity : AppCompatActivity() {
             storyViewModel.getAllMusic()
         }
 
-
         // Lấy được danh sách nhạc
         storyViewModel.listMusic.observe(this) { listMusic ->
             bottomSheet.updateListMusic(listMusic.toMutableList())
         }
+
+        binding.btnClose.setOnClickListener { finish() }
     }
 
     /** Hiển thị preview ảnh hoặc video **/
@@ -214,7 +331,6 @@ class StoryActivity : AppCompatActivity() {
             })
     }
 
-
     /** Xử lý hiển thị video với tỉ lệ thật **/
     private fun showVideoPreview(uri: Uri) {
         binding.imagePreview.visibility = View.GONE
@@ -240,7 +356,6 @@ class StoryActivity : AppCompatActivity() {
             mp.setVolume(1f, 1f) // bật tiếng mặc định
             isMuted = false
             binding.btnSound.setImageResource(R.drawable.ic_sound) // icon âm thanh
-
         }
     }
 
@@ -256,7 +371,7 @@ class StoryActivity : AppCompatActivity() {
             val mediaPlayerField =
                 android.widget.VideoView::class.java.getDeclaredField("mMediaPlayer")
             mediaPlayerField.isAccessible = true
-            val mediaPlayer = mediaPlayerField.get(videoView) as? android.media.MediaPlayer
+            val mediaPlayer = mediaPlayerField.get(videoView) as? MediaPlayer
 
             mediaPlayer?.setVolume(
                 if (isMuted) 0f else 1f,
@@ -280,61 +395,6 @@ class StoryActivity : AppCompatActivity() {
             e.printStackTrace()
         }
     }
-
-    private fun showAddTextDialog() {
-        val input = EditText(this)
-        input.hint = "Nhập nội dung chữ..."
-        AlertDialog.Builder(this)
-            .setTitle("Thêm chữ vào video")
-            .setView(input)
-            .setPositiveButton("OK") { _, _ ->
-                val text = input.text.toString()
-                if (text.isNotEmpty()) {
-                    addTextOverlay(text)
-                }
-            }
-            .setNegativeButton("Hủy", null)
-            .show()
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun addTextOverlay(text: String) {
-        // Xóa overlay cũ nếu có
-        overlayTextView?.let { binding.main.removeView(it) }
-
-        val tv = TextView(this).apply {
-            this.text = text
-            textSize = 20f
-            setTextColor(Color.WHITE)
-            setShadowLayer(4f, 2f, 2f, Color.BLACK)
-            setTypeface(typeface, Typeface.BOLD)
-            gravity = Gravity.CENTER
-            layoutParams = ConstraintLayout.LayoutParams(
-                ConstraintLayout.LayoutParams.WRAP_CONTENT,
-                ConstraintLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-                startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-                verticalBias = 0.85f // vị trí text — gần cuối màn hình
-            }
-        }
-
-        binding.main.addView(tv)
-        overlayTextView = tv
-
-        // 🔹 Cập nhật state
-        videoEditState = videoEditState.copy(
-            overlayText = text,
-            textPositionY = 0.85f,
-            textColor = "#FFFFFF",
-            textSizeSp = 20f
-        )
-
-        Log.d("StoryActivity", "Thêm chữ: ${videoEditState.overlayText}")
-    }
-
 
     // Xóa lựa chọn của mình
     private fun clearSelection() {
@@ -369,7 +429,7 @@ class StoryActivity : AppCompatActivity() {
         binding.etEditableText.requestFocus()
 
         // Mở bàn phím
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(binding.etEditableText, InputMethodManager.SHOW_IMPLICIT)
 
 //        binding.blockColor.visibility = View.VISIBLE
@@ -389,8 +449,17 @@ class StoryActivity : AppCompatActivity() {
         binding.etEditableText.isCursorVisible = false
         binding.etEditableText.clearFocus()
         // Ẩn bàn phím
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(binding.etEditableText.windowToken, 0)
+    }
+
+    private fun finishChooseMusic(music: Music?) {
+        // thực hiện cái gì đó luôn á
+        musicSelected = music
+        playLoopingMusic(music)
+        binding.blockMusic.visibility = View.VISIBLE
+        binding.tvArtist.text = music?.artist
+        binding.tvTitle.text = music?.title
     }
 
     private fun changeBackgroundText(textStyle: String) {
@@ -484,8 +553,24 @@ class StoryActivity : AppCompatActivity() {
         }
     }
 
-    private fun isKeyboardVisible(): Boolean {
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        return imm.isAcceptingText // true nếu bàn phím đang mở
+    private fun playLoopingMusic(music: Music?) {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(music?.url)
+            isLooping = true // 🔁 Phát lặp lại vô hạn
+            setOnPreparedListener { start() }
+            setOnErrorListener { _, _, _ -> false }
+            prepareAsync()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 }

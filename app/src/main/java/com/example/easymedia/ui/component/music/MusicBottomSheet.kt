@@ -20,13 +20,13 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
-class MusicBottomSheet : BottomSheetDialogFragment() {
+class MusicBottomSheet(private val musicSelected: (Music?) -> Unit) : BottomSheetDialogFragment() {
     private var listMusic = mutableListOf<Music>()
     private lateinit var binding: MusicBottomsheetBinding
     private lateinit var adapter: MusicAdapter
     private var mediaPlayer: MediaPlayer? = null
     private var currentMusic: Music? = null
-    private var isPlaying = true
+    private var isPlayingMusic = true
     private var pausePosition: Int = 0
 
     override fun onCreateView(
@@ -54,7 +54,7 @@ class MusicBottomSheet : BottomSheetDialogFragment() {
                 sheet.layoutParams = layoutParams
 
                 behavior.state = BottomSheetBehavior.STATE_EXPANDED
-                behavior.maxHeight = desiredHeight // chỉ API 34+, nếu thấp hơn thì bỏ
+                behavior.maxHeight = desiredHeight
             }
 
         val searchView = binding.btnSearchMusic
@@ -87,19 +87,35 @@ class MusicBottomSheet : BottomSheetDialogFragment() {
         setupSearchView()
 
         binding.btnPause.setOnClickListener {
-            if (isPlaying) {
+            if (isPlayingMusic) {
                 // Tạm dừng nhạc
-                isPlaying = false
+                isPlayingMusic = false
                 binding.btnPause.setImageResource(R.drawable.ic_play)
                 mediaPlayer?.pause()
                 pausePosition = mediaPlayer?.currentPosition ?: 0
             } else {
-                // Tiếp tục phát nhạc từ chỗ dừng
-                isPlaying = true
-                binding.btnPause.setImageResource(R.drawable.ic_pause_media)
-                mediaPlayer?.seekTo(pausePosition)
-                mediaPlayer?.start()
+                // Nếu chưa có mediaPlayer nhưng có currentMusic -> phát lại từ đầu
+                if (mediaPlayer == null) {
+                    currentMusic?.let {
+                        // playMusic sẽ tạo MediaPlayer mới và auto-start
+                        playMusic(it)
+                    }
+                } else {
+                    // Tiếp tục phát nhạc từ chỗ dừng (hoặc từ đầu nếu pausePosition == 0)
+                    isPlayingMusic = true
+                    binding.btnPause.setImageResource(R.drawable.ic_pause_media)
+                    mediaPlayer?.seekTo(pausePosition)
+                    mediaPlayer?.start()
+                }
             }
+        }
+
+        // Sự kiện chọn nhạc xong
+        binding.btnNext.setOnClickListener {
+            // hiển thị lại giao diện như bình thường
+            musicSelected(currentMusic)
+            // Đóng BottomSheet
+            dismiss()
         }
     }
 
@@ -121,7 +137,7 @@ class MusicBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun playMusic(music: Music) {
-        isPlaying = true
+        isPlayingMusic = true
         // Nếu đang phát bài khác → dừng lại
         mediaPlayer?.stop()
         mediaPlayer?.release()
@@ -130,11 +146,29 @@ class MusicBottomSheet : BottomSheetDialogFragment() {
         currentMusic = music
         mediaPlayer = MediaPlayer().apply {
             setDataSource(music.url)
-            setOnPreparedListener { start() }
+            setOnPreparedListener {
+                // Khi chuẩn bị xong thì bắt đầu phát và set UI
+                start()
+                binding.btnPause.setImageResource(R.drawable.ic_pause_media)
+            }
             setOnCompletionListener {
-                // Có thể thêm auto-next ở đây
+                // Khi bài hát phát xong:
+                isPlayingMusic = false
+                // đổi icon thành tam giác (play)
+                binding.btnPause.setImageResource(R.drawable.ic_play)
+                // đặt vị trí pause về 0 để khi ấn play sẽ phát từ đầu
+                pausePosition = 0
+                try {
+                    // đưa con trỏ media về 0, nhưng không release (để có thể start lại)
+                    seekTo(0)
+                } catch (e: Exception) {
+                    // nếu seekTo lỗi, release để đảm bảo trạng thái sạch
+                    // (thường không cần thiết nhưng an toàn)
+                }
+                // Bạn có thể ở đây thực hiện auto-next nếu muốn.
             }
             setOnErrorListener { _, what, extra ->
+                // handle error nếu cần
                 false
             }
             prepareAsync() // load nhạc online bất đồng bộ

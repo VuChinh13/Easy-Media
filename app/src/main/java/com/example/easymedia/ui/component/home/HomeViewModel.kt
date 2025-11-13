@@ -7,9 +7,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
 import com.example.easymedia.data.data_source.firebase.FirebasePostService
+import com.example.easymedia.data.data_source.firebase.FirebaseStoryService
 import com.example.easymedia.data.model.Post
+import com.example.easymedia.data.model.Story
 import com.example.easymedia.data.repository.PostRepository
 import com.example.easymedia.data.repository.PostRepositoryImpl
+import com.example.easymedia.data.repository.StoryRepositoryImpl
 import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,11 +23,15 @@ class HomeViewModel : ViewModel() {
 
     private val _posts = MutableLiveData<Pair<List<Post>, String>>()
     val posts: LiveData<Pair<List<Post>, String>> = _posts
+    private val _story = MutableLiveData<List<Story>>()
+    val story: LiveData<List<Story>> = _story
     private var lastVisible: DocumentSnapshot? = null
     private var isLoading = false
     private var isLastPage = false
     private val currentPosts = mutableListOf<Post>()
     private val pageSize = 10
+    private val storyRepository =
+        StoryRepositoryImpl(FirebaseStoryService(cloudinary = CloudinaryServiceImpl()))
 
     fun fetchFirstPage() {
         if (isLoading) return
@@ -48,6 +55,16 @@ class HomeViewModel : ViewModel() {
             }
 
             isLoading = false
+        }
+    }
+
+    fun getAllStories() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = storyRepository.getAllStories()
+            if (result.isNotEmpty()) {
+                _story.postValue(result)
+            }
+            Log.d("abcd", result.size.toString())
         }
     }
 
