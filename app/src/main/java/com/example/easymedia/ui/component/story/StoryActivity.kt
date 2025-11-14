@@ -8,145 +8,104 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import android.media.MediaPlayer
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.inputmethod.InputMethodManager
-import android.widget.MediaController
-import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.graphics.createBitmap
 import androidx.core.graphics.toColorInt
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.VideoSize
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.palette.graphics.Palette
+import com.antonkarpenko.ffmpegkit.FFmpegKit
+import com.antonkarpenko.ffmpegkit.ReturnCode
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.example.easymedia.R
 import com.example.easymedia.data.model.Music
-import com.example.easymedia.data.model.Story
 import com.example.easymedia.data.model.VideoEditState
 import com.example.easymedia.databinding.ActivityStoryBinding
 import com.example.easymedia.ui.component.music.MusicBottomSheet
 import com.example.easymedia.ui.component.utils.IntentExtras
-import com.example.easymedia.ui.component.utils.SharedPrefer
-import com.example.easymedia.ui.component.utils.SharedPrefer.context
 import gun0912.tedimagepicker.builder.TedImagePicker
 import gun0912.tedimagepicker.builder.type.MediaType
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 
 class StoryActivity : AppCompatActivity() {
+    private lateinit var player: ExoPlayer
     private val storyViewModel: StoryViewModel by viewModels()
+    private val overlayInfo = TextOverlayInfo()
     private var success = false
     private lateinit var binding: ActivityStoryBinding
-    private var overlayTextView: TextView? = null
+    private lateinit var musicPlayer: ExoPlayer   // Player riêng cho nhạc nền (optional)
     private var videoEditState = VideoEditState() // trạng thái mặc định
     private var selectedUri: Uri? = null
     private var isMuted = false
-    private var mediaPlayer: MediaPlayer? = null
     private var textStyleSelected = "lato"
     private var musicSelected: Music? = null
     private val bottomSheet = MusicBottomSheet { music ->
         finishChooseMusic(music)
     }
+    private lateinit var scaleGestureDetector: ScaleGestureDetector
+    private lateinit var gestureDetector: GestureDetector
+    private var scaleFactor = 1f
+    private var translateX = 0f
+    private var translateY = 0f
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityStoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         setupUI()
 
+        // ----- Click listener ngắn gọn (gọi từ UI) -----
         binding.btnSharedStory.setOnClickListener {
             binding.btnSharedStory.visibility = View.GONE
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
-            mediaPlayer = null
-            binding.loading.visibility = View.VISIBLE
-            // Tạo đối tượng Story
-            val userId = SharedPrefer.getId()
-            val story = Story(userId = userId, music = musicSelected)
-            binding.blockImage.post {
-                val bitmap = captureBlockImage()
-                if (bitmap != null) {
-                    storyViewModel.uploadStory(story, bitmapToFile(this, bitmap))
-                }
+            if (::musicPlayer.isInitialized) {
+                musicPlayer.stop()
+                musicPlayer.release()
             }
+            // binding.loading.visibility = View.VISIBLE
+            renderVideoWithOverlay(this, selectedUri!!, binding.blockImage)
         }
+
+//            binding.loading.visibility = View.VISIBLE
+//            // Tạo đối tượng Story
+//            val userId = SharedPrefer.getId()
+//            val story = Story(userId = userId, music = musicSelected)
+//            binding.blockImage.post {
+//                val bitmap = captureBlockImage()
+//                if (bitmap != null) {
+//                    storyViewModel.uploadStory(story, bitmapToFile(this, bitmap))
+//                }
+//            }
 
         storyViewModel.finish.observe(this) {
             if (it) {
                 binding.loading.visibility = View.GONE
                 val resultIntent = intent
                 success = true
-                resultIntent.putExtra(IntentExtras.RESULT_DATA, success)
+                resultIntent.putExtra(IntentExtras.RESULT_DATA, true)
                 setResult(RESULT_OK, resultIntent)
                 finish()
             }
         }
-    }
-
-    // hàm này dùng để mà lưu ảnh vào bên trong máy
-    private fun saveBitmapToGallery(bitmap: Bitmap) {
-        val filename = "story_${System.currentTimeMillis()}.png"
-
-        // Tạo thông tin file để MediaStore quản lý
-        val values = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, filename)
-            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/AppMedia") // thư mục trong Gallery
-            put(MediaStore.Images.Media.IS_PENDING, 1) // tạm thời để ghi xong mới hiển thị
-        }
-
-        val resolver = context.contentResolver
-        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-
-        uri?.let { imageUri ->
-            resolver.openOutputStream(imageUri)?.use { outStream ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, outStream)
-            }
-
-            // Ghi xong, đánh dấu ảnh hoàn tất để hiển thị trong Gallery
-            values.clear()
-            values.put(MediaStore.Images.Media.IS_PENDING, 0)
-            resolver.update(imageUri, values, null, null)
-        }
-    }
-
-    private fun captureBlockImage(): Bitmap? {
-        val view = binding.blockImage
-
-        // Kiểm tra view đã có kích thước
-        if (view.width == 0 || view.height == 0) return null
-
-        // Tạo bitmap cùng kích thước với view
-        val bitmap = createBitmap(view.width, view.height)
-
-        // Tạo canvas từ bitmap
-        val canvas = Canvas(bitmap)
-
-        // Vẽ view lên canvas (bao gồm tất cả view con bên trong)
-        view.draw(canvas)
-
-        return bitmap
-    }
-
-    fun bitmapToFile(context: Context, bitmap: Bitmap): File {
-        // Tạo file tạm trong thư mục cache
-        val file = File(context.cacheDir, "story_${System.currentTimeMillis()}.png")
-
-        // Ghi bitmap ra file
-        FileOutputStream(file).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-        }
-
-        return file
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -173,12 +132,40 @@ class StoryActivity : AppCompatActivity() {
             hideAddText()
         }
 
+        scaleGestureDetector = ScaleGestureDetector(
+            this,
+            object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                override fun onScale(detector: ScaleGestureDetector): Boolean {
+                    scaleFactor *= detector.scaleFactor
+                    scaleFactor = scaleFactor.coerceIn(0.5f, 5f) // giới hạn phóng to/thu nhỏ
+                    applyMatrix()
+                    return true
+                }
+            })
+
+        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onScroll(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                distanceX: Float,
+                distanceY: Float
+            ): Boolean {
+                translateX -= distanceX
+                translateY -= distanceY
+                applyMatrix()
+                return true
+            }
+        })
+
         binding.etEditableText.setOnTouchListener(object : View.OnTouchListener {
+
             private var dX = 0f
             private var dY = 0f
 
             override fun onTouch(view: View, event: MotionEvent): Boolean {
+
                 when (event.action) {
+
                     MotionEvent.ACTION_DOWN -> {
                         dX = view.x - event.rawX
                         dY = view.y - event.rawY
@@ -190,6 +177,12 @@ class StoryActivity : AppCompatActivity() {
                             .y(event.rawY + dY)
                             .setDuration(0)
                             .start()
+                    }
+
+                    MotionEvent.ACTION_UP -> {
+                        // Lưu lại vị trí cuối cùng
+                        overlayInfo.posX = view.x
+                        overlayInfo.posY = view.y
                     }
                 }
                 return true
@@ -277,6 +270,12 @@ class StoryActivity : AppCompatActivity() {
             bottomSheet.updateListMusic(listMusic.toMutableList())
         }
 
+        binding.videoTexture.setOnTouchListener { v, event ->
+            scaleGestureDetector.onTouchEvent(event)
+            gestureDetector.onTouchEvent(event)
+            true
+        }
+
         binding.btnClose.setOnClickListener { finish() }
     }
 
@@ -294,7 +293,7 @@ class StoryActivity : AppCompatActivity() {
     /** Xử lý hiển thị ảnh với tỉ lệ thật **/
     private fun showImagePreview(uri: Uri) {
         binding.imagePreview.visibility = View.VISIBLE
-        binding.videoPreview.visibility = View.GONE
+        binding.videoTexture.visibility = View.GONE
         binding.btnSound.visibility = View.INVISIBLE
 
         Glide.with(this)
@@ -332,83 +331,65 @@ class StoryActivity : AppCompatActivity() {
     }
 
     /** Xử lý hiển thị video với tỉ lệ thật **/
+    /** Hiển thị video với ExoPlayer, giữ gradient, dimensionRatio, loop, mute **/
     private fun showVideoPreview(uri: Uri) {
+        binding.videoTexture.visibility = View.VISIBLE
         binding.imagePreview.visibility = View.GONE
-        binding.videoPreview.visibility = View.VISIBLE
+        binding.btnSound.visibility = View.VISIBLE
 
-        binding.videoPreview.setVideoURI(uri)
-        val mediaController = MediaController(this)
-        mediaController.setAnchorView(binding.videoPreview)
-        binding.videoPreview.setMediaController(mediaController)
-
-        binding.videoPreview.setOnPreparedListener { mp ->
-            val videoWidth = mp.videoWidth
-            val videoHeight = mp.videoHeight
-            val ratio = "$videoWidth:$videoHeight"
-
-            val params = binding.videoPreview.layoutParams as ConstraintLayout.LayoutParams
-            params.dimensionRatio = "H,$ratio"
-            binding.videoPreview.layoutParams = params
-
-            mp.isLooping = true
-            binding.videoPreview.start()
-
-            mp.setVolume(1f, 1f) // bật tiếng mặc định
-            isMuted = false
-            binding.btnSound.setImageResource(R.drawable.ic_sound) // icon âm thanh
+        // 1️⃣ Lấy frame đầu tiên → gradient background
+        val retriever = MediaMetadataRetriever()
+        retriever.setDataSource(this, uri)
+        retriever.getFrameAtTime(0)?.let { bitmap ->
+            Palette.from(bitmap).generate { palette ->
+                val dominantColor = palette?.getDominantColor(Color.DKGRAY) ?: Color.DKGRAY
+                val gradient = GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    intArrayOf(dominantColor, Color.BLACK)
+                )
+                binding.blockImage.background = gradient
+            }
         }
+        retriever.release()
+
+        // 2️⃣ Khởi tạo ExoPlayer
+        player = ExoPlayer.Builder(this).build()
+        player.setMediaItem(MediaItem.fromUri(uri))
+        player.repeatMode = Player.REPEAT_MODE_ONE
+        player.playWhenReady = true
+
+        // 3️⃣ Gắn TextureView
+        player.setVideoTextureView(binding.videoTexture)
+
+        // 4️⃣ Lắng nghe VideoSize → set dimensionRatio
+        player.addListener(object : Player.Listener {
+            override fun onVideoSizeChanged(videoSize: VideoSize) {
+                val params = binding.videoTexture.layoutParams as ConstraintLayout.LayoutParams
+                params.dimensionRatio = "${videoSize.width}:${videoSize.height}"
+                binding.videoTexture.layoutParams = params
+            }
+
+            override fun onRenderedFirstFrame() {
+                // Sound mặc định ON
+                player.volume = 1f
+                isMuted = false
+                binding.btnSound.setImageResource(R.drawable.ic_sound)
+            }
+        })
+
+        player.prepare()
     }
 
     /** Bật / tắt âm thanh video **/
-    @SuppressLint("DiscouragedPrivateApi")
     private fun toggleSound() {
-        val videoView = binding.videoPreview
-        if (videoView.visibility != View.VISIBLE) return
-
         isMuted = !isMuted
-
-        try {
-            val mediaPlayerField =
-                android.widget.VideoView::class.java.getDeclaredField("mMediaPlayer")
-            mediaPlayerField.isAccessible = true
-            val mediaPlayer = mediaPlayerField.get(videoView) as? MediaPlayer
-
-            mediaPlayer?.setVolume(
-                if (isMuted) 0f else 1f,
-                if (isMuted) 0f else 1f
-            )
-
-            // 🔹 Cập nhật vào trạng thái chỉnh sửa
-            videoEditState = videoEditState.copy(removeOriginalAudio = isMuted)
-
-            Log.d(
-                "StoryActivity",
-                "Âm thanh: ${if (isMuted) "TẮT" else "BẬT"} — removeOriginalAudio = ${videoEditState.removeOriginalAudio}"
-            )
-
-            // Đổi icon cho nút âm thanh
-            binding.btnSound.setImageResource(
-                if (isMuted) R.drawable.ic_sound_off else R.drawable.ic_sound
-            )
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        player.volume = if (isMuted) 0f else 1f
+        binding.btnSound.setImageResource(
+            if (isMuted) R.drawable.ic_sound_off else R.drawable.ic_sound
+        )
+        videoEditState = videoEditState.copy(removeOriginalAudio = isMuted)
+        Log.d("StoryActivity", "Âm thanh: ${if (isMuted) "TẮT" else "BẬT"}")
     }
-
-    // Xóa lựa chọn của mình
-    private fun clearSelection() {
-        selectedUri = null
-        binding.imagePreview.visibility = View.GONE
-        binding.videoPreview.visibility = View.GONE
-        binding.videoPreview.stopPlayback()
-
-        overlayTextView?.let { binding.main.removeView(it) }
-        overlayTextView = null
-
-        videoEditState = VideoEditState() // reset trạng thái
-    }
-
 
     @SuppressLint("ServiceCast")
     private fun hideAddText() {
@@ -453,10 +434,33 @@ class StoryActivity : AppCompatActivity() {
         imm.hideSoftInputFromWindow(binding.etEditableText.windowToken, 0)
     }
 
+    private fun applyMatrix() {
+        val matrix = android.graphics.Matrix()
+        matrix.postScale(
+            scaleFactor,
+            scaleFactor,
+            binding.videoTexture.width / 2f,
+            binding.videoTexture.height / 2f
+        )
+        matrix.postTranslate(translateX, translateY)
+        binding.videoTexture.setTransform(matrix)
+    }
+
+    /** Chọn nhạc nền → tạo ExoPlayer riêng cho nhạc **/
     private fun finishChooseMusic(music: Music?) {
-        // thực hiện cái gì đó luôn á
         musicSelected = music
-        playLoopingMusic(music)
+        musicPlayer.release()
+
+        music?.url?.let { url ->
+            musicPlayer = ExoPlayer.Builder(this).build().apply {
+                setMediaItem(MediaItem.fromUri(url))
+                repeatMode = Player.REPEAT_MODE_ONE
+                playWhenReady = true
+                volume = 1f
+                prepare()
+            }
+        }
+
         binding.blockMusic.visibility = View.VISIBLE
         binding.tvArtist.text = music?.artist
         binding.tvTitle.text = music?.title
@@ -553,24 +557,135 @@ class StoryActivity : AppCompatActivity() {
         }
     }
 
-    private fun playLoopingMusic(music: Music?) {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = null
+    fun renderVideoWithOverlay(context: Context, videoUri: Uri, overlayView: View) {
 
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(music?.url)
-            isLooping = true // 🔁 Phát lặp lại vô hạn
-            setOnPreparedListener { start() }
-            setOnErrorListener { _, _, _ -> false }
-            prepareAsync()
+        val inputVideo = copyVideoToCache(context, videoUri)
+
+        // 1. Chụp toàn bộ blockImage
+        val overlayBitmap = createOverlayBitmap(overlayView)
+
+        // 2. Lấy kích thước video thật
+        val retriever = MediaMetadataRetriever()
+        retriever.setDataSource(inputVideo.absolutePath)
+        val videoW = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)!!.toInt()
+        val videoH = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)!!.toInt()
+        retriever.release()
+
+        // 3. Scale overlay = cùng kích thước video
+        val scaledOverlay = Bitmap.createScaledBitmap(overlayBitmap, videoW, videoH, true)
+
+        // 4. Lưu overlay PNG
+        val overlayFile = saveOverlayToFile(context, scaledOverlay)
+
+        val outputTemp = File(context.cacheDir, "output_render.mp4")
+
+        // 5. Ghép overlay lên video
+        val cmd = arrayOf(
+            "-y",
+            "-i", inputVideo.absolutePath,
+            "-i", overlayFile.absolutePath,
+            "-filter_complex", "overlay=0:0",
+            "-c:v", "libx264",
+            "-preset", "ultrafast",
+            "-crf", "20",
+            "-c:a", "aac",
+            outputTemp.absolutePath
+        )
+
+        FFmpegKit.executeAsync(cmd.joinToString(" ")) { session ->
+            if (ReturnCode.isSuccess(session.returnCode)) {
+
+                val finalUri = saveVideoToPublic(context, outputTemp)
+                Log.d("FFmpeg", "Saved to public: $finalUri")
+
+            } else {
+                Log.e("FFmpeg", "Error: ${session.returnCode}")
+                Log.e("FFmpeg", session.allLogsAsString)
+            }
         }
+    }
+
+    fun copyVideoToCache(context: Context, uri: Uri): File {
+        val inputStream = context.contentResolver.openInputStream(uri)!!
+        val outputFile = File(context.cacheDir, "input_video.mp4")
+
+        FileOutputStream(outputFile).use { out ->
+            inputStream.copyTo(out)
+        }
+
+        return outputFile
+    }
+
+    fun saveVideoToPublic(context: Context, source: File): Uri {
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/EasyMedia/")
+            put(MediaStore.Video.Media.DISPLAY_NAME, "story_${System.currentTimeMillis()}.mp4")
+            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+            put(MediaStore.Video.Media.IS_PENDING, 1)
+        }
+
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)!!
+
+        resolver.openOutputStream(uri).use { out ->
+            FileInputStream(source).copyTo(out!!)
+        }
+
+        // Mark as finished
+        contentValues.clear()
+        contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
+        resolver.update(uri, contentValues, null, null)
+
+        return uri
+    }
+
+    fun createOverlayBitmap(view: View): Bitmap {
+        // Đảm bảo view đã được layout
+        if (view.width == 0 || view.height == 0) {
+            throw IllegalStateException("View has no size! Call this AFTER view is laid out.")
+        }
+
+        val bitmap = Bitmap.createBitmap(
+            view.width,
+            view.height,
+            Bitmap.Config.ARGB_8888
+        )
+
+        val canvas = Canvas(bitmap)
+        view.draw(canvas)
+
+        return bitmap
+    }
+
+
+    fun saveOverlayToFile(context: Context, bmp: Bitmap): File {
+        val file = File(context.filesDir, "overlay.png")
+        FileOutputStream(file).use { out ->
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
+        }
+        return file
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = null
+
+        if (::musicPlayer.isInitialized) {
+            musicPlayer.stop()
+            musicPlayer.release()
+        }
+
+        if (::player.isInitialized) {
+            player.stop()
+            player.release()
+        }
     }
 }
+
+data class TextOverlayInfo(
+    var text: String = "",
+    var posX: Float = 0f,
+    var posY: Float = 0f,
+    var textSize: Float = 22f,
+    var textColor: String = "white", // FFmpeg dùng màu string
+    var fontPath: String = ""        // nếu cần custom font
+)

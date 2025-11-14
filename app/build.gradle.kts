@@ -60,6 +60,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.cardview)
+    implementation(libs.androidx.media3.exoplayer)
 
     // AndroidX & UI
     val fragment_version = "1.8.3"

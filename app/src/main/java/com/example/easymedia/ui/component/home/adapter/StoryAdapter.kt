@@ -94,7 +94,6 @@ class StoryAdapter(
                     // chuyển màn hình
                     listenerStory.onStoryClick()
                 }
-
                 // nếu mà có story của mình -> xem được
                 if (myStory) {
                     itemView.setOnClickListener {
@@ -107,7 +106,6 @@ class StoryAdapter(
                 } else {
                     position - 1
                 }
-
                 lifecycleCoroutineScope.launch(Dispatchers.IO) {
                     val result = repo.getUserById(listStory[index].userId)
                     result.onSuccess { user ->
@@ -123,6 +121,11 @@ class StoryAdapter(
                             }
                         }
                     }
+                }
+                itemView.setOnClickListener {
+                    listenerStory.switchScreenStory(
+                        storyOfUser[listStory[index].userId] ?: emptyList()
+                    )
                 }
             }
         }
