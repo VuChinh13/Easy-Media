@@ -64,6 +64,51 @@ class CloudinaryServiceImpl(
         }
     }
 
+    override suspend fun uploadVideo(
+        videoFile: File,
+        folder: String
+    ): CloudinaryUploadResult = withContext(Dispatchers.IO) {
+        Log.d("CloudinaryService", "Bắt đầu upload video: ${videoFile.name}, folder: $folder")
+
+        val mediaType = "video/*".toMediaTypeOrNull()
+        val fileBody = videoFile.asRequestBody(mediaType)
+
+        val form = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", videoFile.name, fileBody)
+            .addFormDataPart("upload_preset", unsignedPreset)
+            .addFormDataPart("folder", folder)
+            .build()
+
+        val req = Request.Builder()
+            .url("https://api.cloudinary.com/v1_1/$cloudName/video/upload")
+            .post(form)
+            .build()
+
+        httpClient.newCall(req).execute().use { resp ->
+            Log.d("CloudinaryService", "HTTP status: ${resp.code}")
+
+            if (!resp.isSuccessful) {
+                Log.e("CloudinaryService", "Upload thất bại: ${resp.code} ${resp.message}")
+                error("Cloudinary video upload failed: ${resp.code} ${resp.message}")
+            }
+
+            val body = resp.body?.string() ?: error("Empty response body")
+            val json = JSONObject(body)
+
+            val secureUrl = json.getString("secure_url")
+            val publicId = json.getString("public_id")
+
+            Log.d("CloudinaryService", "Upload video thành công!")
+            Log.d("CloudinaryService", "URL: $secureUrl")
+            Log.d("CloudinaryService", "Public ID: $publicId")
+
+            CloudinaryUploadResult(
+                secureUrl = secureUrl,
+                publicId = publicId
+            )
+        }
+    }
+
     override suspend fun deleteImage(publicId: String): Boolean = withContext(Dispatchers.IO) {
         val timestamp = (System.currentTimeMillis() / 1000).toString()
 

@@ -1,48 +1,54 @@
 package com.example.easymedia.ui.component.story
 
+import android.Manifest
 import android.annotation.SuppressLint
-import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
-import android.view.GestureDetector
 import android.view.MotionEvent
-import android.view.ScaleGestureDetector
+import android.view.TextureView
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.toColorInt
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.palette.graphics.Palette
-import com.antonkarpenko.ffmpegkit.FFmpegKit
-import com.antonkarpenko.ffmpegkit.ReturnCode
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.example.easymedia.R
 import com.example.easymedia.data.model.Music
+import com.example.easymedia.data.model.Story
 import com.example.easymedia.data.model.VideoEditState
 import com.example.easymedia.databinding.ActivityStoryBinding
 import com.example.easymedia.ui.component.music.MusicBottomSheet
+import com.example.easymedia.ui.component.story.service.VideoRenderService
 import com.example.easymedia.ui.component.utils.IntentExtras
+import com.example.easymedia.ui.component.utils.SharedPrefer
 import gun0912.tedimagepicker.builder.TedImagePicker
 import gun0912.tedimagepicker.builder.type.MediaType
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
 
 class StoryActivity : AppCompatActivity() {
@@ -55,46 +61,128 @@ class StoryActivity : AppCompatActivity() {
     private var videoEditState = VideoEditState() // trạng thái mặc định
     private var selectedUri: Uri? = null
     private var isMuted = false
+    private var isSelectedImage = true // mặc định là chọn ảnh đe
     private var textStyleSelected = "lato"
     private var musicSelected: Music? = null
     private val bottomSheet = MusicBottomSheet { music ->
         finishChooseMusic(music)
     }
-    private lateinit var scaleGestureDetector: ScaleGestureDetector
-    private lateinit var gestureDetector: GestureDetector
-    private var scaleFactor = 1f
-    private var translateX = 0f
-    private var translateY = 0f
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityStoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // khởi tạo musicPlayer mặc định để tránh crash
+        musicPlayer = ExoPlayer.Builder(this).build()
+
         setupUI()
 
         // ----- Click listener ngắn gọn (gọi từ UI) -----
         binding.btnSharedStory.setOnClickListener {
-            binding.btnSharedStory.visibility = View.GONE
-            if (::musicPlayer.isInitialized) {
-                musicPlayer.stop()
-                musicPlayer.release()
-            }
-            // binding.loading.visibility = View.VISIBLE
-            renderVideoWithOverlay(this, selectedUri!!, binding.blockImage)
-        }
 
-//            binding.loading.visibility = View.VISIBLE
-//            // Tạo đối tượng Story
-//            val userId = SharedPrefer.getId()
-//            val story = Story(userId = userId, music = musicSelected)
-//            binding.blockImage.post {
-//                val bitmap = captureBlockImage()
-//                if (bitmap != null) {
-//                    storyViewModel.uploadStory(story, bitmapToFile(this, bitmap))
-//                }
-//            }
+            // nếu mà là ảnh
+            if (isSelectedImage) {
+                binding.loading.visibility = View.VISIBLE
+                // Tạo đối tượng Story
+                val userId = SharedPrefer.getId()
+                val story = Story(
+                    userId = userId, music = musicSelected, durationMs = parseTimeToMillis(
+                        musicSelected?.duration ?: "0:00"
+                    )
+                )
+                binding.blockImage.post {
+                    val bitmap = captureBlockImage()
+                    if (bitmap != null) {
+                        storyViewModel.uploadStory(story, bitmapToFile(this, bitmap))
+                    }
+                }
+            } else {
+                // nếu mà là video
+                Toast.makeText(this@StoryActivity, "Đang xử lí video", Toast.LENGTH_LONG).show()
+                binding.btnSharedStory.visibility = View.GONE
+                if (::musicPlayer.isInitialized) {
+                    musicPlayer.stop()
+                    musicPlayer.release()
+                }
+
+                val userId = SharedPrefer.getId()
+                val story = Story(userId = userId, music = musicSelected)
+
+                // đảm bảo view đã layout
+                binding.blockImage.post {
+                    try {
+                        // 1) tạo overlay bitmap (sử dụng hàm bạn có)
+                        val overlayBitmap = createOverlayWithHole(
+                            binding.blockImage,
+                            binding.videoTexture,
+                            binding.etEditableText
+                        )
+                        val overlayFile = saveOverlayBitmapToFile(
+                            this,
+                            overlayBitmap,
+                            "overlay_tmp_${System.currentTimeMillis()}.png"
+                        )
+
+                        // 2) tính các kích thước & vị trí
+                        val blockW = binding.blockImage.width
+                        val blockH = binding.blockImage.height
+
+                        // IMPORTANT: lấy vị trí và kích thước thực tế của videoTexture *trong blockImage*
+                        // nếu texture nằm trực tiếp bên trong blockImage và không có translation parent, thì:
+                        val tx = binding.videoTexture.left
+                        val ty = binding.videoTexture.top
+                        val tw = binding.videoTexture.width
+                        val th = binding.videoTexture.height
+
+                        // 3) duration video
+                        val retriever = MediaMetadataRetriever()
+                        retriever.setDataSource(this, selectedUri)
+                        val durStr =
+                            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                        val durationMs = durStr?.toLongOrNull() ?: 0L
+                        retriever.release()
+
+                        // 4) start service
+                        val intent = Intent(this, VideoRenderService::class.java).apply {
+                            putExtra(IntentExtras.EXTRA_VIDEO_URI, selectedUri)
+                            putExtra(
+                                IntentExtras.EXTRA_OVERLAY_PATH,
+                                overlayFile.absolutePath
+                            )
+                            putExtra(IntentExtras.EXTRA_BLOCK_W, blockW)
+                            putExtra(IntentExtras.EXTRA_BLOCK_H, blockH)
+                            putExtra(IntentExtras.EXTRA_TX, tx)
+                            putExtra(IntentExtras.EXTRA_TY, ty)
+                            putExtra(IntentExtras.EXTRA_TW, tw)
+                            putExtra(IntentExtras.EXTRA_TH, th)
+                            putExtra(IntentExtras.EXTRA_DURATION_MS, durationMs)
+                            putExtra(IntentExtras.EXTRA_STORY, story)
+                        }
+
+                        // 🔹 1. Kiểm tra và xin quyền thông báo (Android 13+)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                                != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                requestPermissions(
+                                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                                    1001
+                                )
+                                return@post
+                            }
+                        }
+                        startForegroundService(intent)
+
+                        // kết thúc luôn Activity
+                        finish()
+
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
 
         storyViewModel.finish.observe(this) {
             if (it) {
@@ -131,31 +219,6 @@ class StoryActivity : AppCompatActivity() {
         binding.btnAddText.setOnClickListener {
             hideAddText()
         }
-
-        scaleGestureDetector = ScaleGestureDetector(
-            this,
-            object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                override fun onScale(detector: ScaleGestureDetector): Boolean {
-                    scaleFactor *= detector.scaleFactor
-                    scaleFactor = scaleFactor.coerceIn(0.5f, 5f) // giới hạn phóng to/thu nhỏ
-                    applyMatrix()
-                    return true
-                }
-            })
-
-        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onScroll(
-                e1: MotionEvent?,
-                e2: MotionEvent,
-                distanceX: Float,
-                distanceY: Float
-            ): Boolean {
-                translateX -= distanceX
-                translateY -= distanceY
-                applyMatrix()
-                return true
-            }
-        })
 
         binding.etEditableText.setOnTouchListener(object : View.OnTouchListener {
 
@@ -270,13 +333,37 @@ class StoryActivity : AppCompatActivity() {
             bottomSheet.updateListMusic(listMusic.toMutableList())
         }
 
-        binding.videoTexture.setOnTouchListener { v, event ->
-            scaleGestureDetector.onTouchEvent(event)
-            gestureDetector.onTouchEvent(event)
-            true
+        binding.btnClose.setOnClickListener { finish() }
+    }
+
+    private fun captureBlockImage(): Bitmap? {
+        val view = binding.blockImage
+
+        // Kiểm tra view đã có kích thước
+        if (view.width == 0 || view.height == 0) return null
+
+        // Tạo bitmap cùng kích thước với view
+        val bitmap = createBitmap(view.width, view.height)
+
+        // Tạo canvas từ bitmap
+        val canvas = Canvas(bitmap)
+
+        // Vẽ view lên canvas (bao gồm tất cả view con bên trong)
+        view.draw(canvas)
+
+        return bitmap
+    }
+
+    fun bitmapToFile(context: Context, bitmap: Bitmap): File {
+        // Tạo file tạm trong thư mục cache
+        val file = File(context.cacheDir, "story_${System.currentTimeMillis()}.png")
+
+        // Ghi bitmap ra file
+        FileOutputStream(file).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
         }
 
-        binding.btnClose.setOnClickListener { finish() }
+        return file
     }
 
     /** Hiển thị preview ảnh hoặc video **/
@@ -284,8 +371,10 @@ class StoryActivity : AppCompatActivity() {
         val contentType = contentResolver.getType(uri)
 
         if (contentType?.startsWith("image/") == true) {
+            isSelectedImage = true
             showImagePreview(uri)
         } else if (contentType?.startsWith("video/") == true) {
+            isSelectedImage = false
             showVideoPreview(uri)
         }
     }
@@ -434,18 +523,6 @@ class StoryActivity : AppCompatActivity() {
         imm.hideSoftInputFromWindow(binding.etEditableText.windowToken, 0)
     }
 
-    private fun applyMatrix() {
-        val matrix = android.graphics.Matrix()
-        matrix.postScale(
-            scaleFactor,
-            scaleFactor,
-            binding.videoTexture.width / 2f,
-            binding.videoTexture.height / 2f
-        )
-        matrix.postTranslate(translateX, translateY)
-        binding.videoTexture.setTransform(matrix)
-    }
-
     /** Chọn nhạc nền → tạo ExoPlayer riêng cho nhạc **/
     private fun finishChooseMusic(music: Music?) {
         musicSelected = music
@@ -557,109 +634,84 @@ class StoryActivity : AppCompatActivity() {
         }
     }
 
-    fun renderVideoWithOverlay(context: Context, videoUri: Uri, overlayView: View) {
+    private fun createOverlayWithHole(
+        blockView: View,
+        textureView: TextureView,
+        textView: View
+    ): Bitmap {
+        // ensure laid out
+        if (blockView.width == 0 || blockView.height == 0) {
+            throw IllegalStateException("blockView not laid out yet")
+        }
 
-        val inputVideo = copyVideoToCache(context, videoUri)
+        val blockW = blockView.width
+        val blockH = blockView.height
 
-        // 1. Chụp toàn bộ blockImage
-        val overlayBitmap = createOverlayBitmap(overlayView)
+        // Tọa độ textureView nằm trong blockView (blockView là parent trong layout của bạn)
+        val videoLeft = textureView.left
+        val videoTop = textureView.top
+        val videoW = textureView.width
+        val videoH = textureView.height
 
-        // 2. Lấy kích thước video thật
-        val retriever = MediaMetadataRetriever()
-        retriever.setDataSource(inputVideo.absolutePath)
-        val videoW = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)!!.toInt()
-        val videoH = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)!!.toInt()
-        retriever.release()
+        // Tạo bitmap result (ARGB_8888 để có alpha)
+        val result = createBitmap(blockW, blockH)
+        val canvas = Canvas(result)
 
-        // 3. Scale overlay = cùng kích thước video
-        val scaledOverlay = Bitmap.createScaledBitmap(overlayBitmap, videoW, videoH, true)
+        // 1) Vẽ background của blockView (nếu có) lên canvas
+        val bg = blockView.background
+        if (bg != null) {
+            bg.setBounds(0, 0, blockW, blockH)
+            bg.draw(canvas)
+        } else {
+            // fallback: fill black if no background
+            canvas.drawColor(Color.BLACK)
+        }
 
-        // 4. Lưu overlay PNG
-        val overlayFile = saveOverlayToFile(context, scaledOverlay)
+        // Đoạn này liên quan đến việc mà vẽ những thành phần View còn bên trong ViewGroup
 
-        val outputTemp = File(context.cacheDir, "output_render.mp4")
+//        if (blockView is ViewGroup) {
+//            for (i in 0 until blockView.childCount) {
+//                val child = blockView.getChildAt(i)
+//
+//                // bỏ textureView (video) + bỏ cả textView
+//                if (child === textureView || child === textView) continue
+//
+//                canvas.save()
+//                canvas.translate(child.left.toFloat(), child.top.toFloat())
+//                child.draw(canvas)
+//                canvas.restore()
+//            }
+//        }
 
-        // 5. Ghép overlay lên video
-        val cmd = arrayOf(
-            "-y",
-            "-i", inputVideo.absolutePath,
-            "-i", overlayFile.absolutePath,
-            "-filter_complex", "overlay=0:0",
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-crf", "20",
-            "-c:a", "aac",
-            outputTemp.absolutePath
+        // 3) MAKE HOLE: xóa vùng video để làm trong suốt (để video bên dưới hiện ra)
+        val clearPaint = Paint()
+        clearPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+        canvas.drawRect(
+            videoLeft.toFloat(),
+            videoTop.toFloat(),
+            (videoLeft + videoW).toFloat(),
+            (videoTop + videoH).toFloat(),
+            clearPaint
         )
+        // important: reset xfermode (not strictly necessary here)
+        clearPaint.xfermode = null
 
-        FFmpegKit.executeAsync(cmd.joinToString(" ")) { session ->
-            if (ReturnCode.isSuccess(session.returnCode)) {
+        // 4) VẼ textView lên canvas (nếu nằm trên vùng video, nó vẽ lên trên)
+        // (Một số layouts có thể đã vẽ text khi loop child; nếu chưa, vẽ lại để chắc chắn vị trí layer đúng)
+        canvas.save()
+        canvas.translate(overlayInfo.posX, overlayInfo.posY)
+        textView.draw(canvas)
+        canvas.restore()
 
-                val finalUri = saveVideoToPublic(context, outputTemp)
-                Log.d("FFmpeg", "Saved to public: $finalUri")
-
-            } else {
-                Log.e("FFmpeg", "Error: ${session.returnCode}")
-                Log.e("FFmpeg", session.allLogsAsString)
-            }
-        }
+        return result
     }
 
-    fun copyVideoToCache(context: Context, uri: Uri): File {
-        val inputStream = context.contentResolver.openInputStream(uri)!!
-        val outputFile = File(context.cacheDir, "input_video.mp4")
-
-        FileOutputStream(outputFile).use { out ->
-            inputStream.copyTo(out)
-        }
-
-        return outputFile
-    }
-
-    fun saveVideoToPublic(context: Context, source: File): Uri {
-        val contentValues = ContentValues().apply {
-            put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/EasyMedia/")
-            put(MediaStore.Video.Media.DISPLAY_NAME, "story_${System.currentTimeMillis()}.mp4")
-            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-            put(MediaStore.Video.Media.IS_PENDING, 1)
-        }
-
-        val resolver = context.contentResolver
-        val uri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)!!
-
-        resolver.openOutputStream(uri).use { out ->
-            FileInputStream(source).copyTo(out!!)
-        }
-
-        // Mark as finished
-        contentValues.clear()
-        contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
-        resolver.update(uri, contentValues, null, null)
-
-        return uri
-    }
-
-    fun createOverlayBitmap(view: View): Bitmap {
-        // Đảm bảo view đã được layout
-        if (view.width == 0 || view.height == 0) {
-            throw IllegalStateException("View has no size! Call this AFTER view is laid out.")
-        }
-
-        val bitmap = Bitmap.createBitmap(
-            view.width,
-            view.height,
-            Bitmap.Config.ARGB_8888
-        )
-
-        val canvas = Canvas(bitmap)
-        view.draw(canvas)
-
-        return bitmap
-    }
-
-
-    fun saveOverlayToFile(context: Context, bmp: Bitmap): File {
-        val file = File(context.filesDir, "overlay.png")
+    private fun saveOverlayBitmapToFile(
+        context: Context,
+        bmp: Bitmap,
+        filename: String = "overlay.png"
+    ): File {
+        val file = File(context.filesDir, filename)
         FileOutputStream(file).use { out ->
             bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
         }
@@ -677,6 +729,33 @@ class StoryActivity : AppCompatActivity() {
         if (::player.isInitialized) {
             player.stop()
             player.release()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1001 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // Quyền được cấp, chạy service
+            val intent = Intent(this, VideoRenderService::class.java)
+            startForegroundService(intent)
+        }
+    }
+
+    fun parseTimeToMillis(timeString: String): Long {
+        try {
+            val parts = timeString.split(":")
+            if (parts.size != 2) return 0L
+
+            val minutes = parts[0].toLongOrNull() ?: 0L
+            val seconds = parts[1].toLongOrNull() ?: 0L
+
+            return (minutes * 60 + seconds) * 1000
+        } catch (e: Exception) {
+            return 0L
         }
     }
 }

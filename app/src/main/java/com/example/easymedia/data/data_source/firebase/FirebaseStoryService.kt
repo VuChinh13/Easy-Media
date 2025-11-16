@@ -2,6 +2,7 @@ package com.example.easymedia.data.data_source.firebase
 
 import android.util.Log
 import com.example.easymedia.data.data_source.cloudinary.CloudinaryService
+import com.example.easymedia.data.data_source.cloudinary.CloudinaryUploadResult
 import com.example.easymedia.data.model.Music
 import com.example.easymedia.data.model.Story
 import com.google.firebase.firestore.FieldPath
@@ -25,7 +26,7 @@ interface StoryService {
      * @param imageFile: File — ảnh story được chụp
      * @return Boolean — true nếu upload thành công
      */
-    suspend fun uploadStory(story: Story, imageFile: File): Boolean
+    suspend fun uploadStory(story: Story, imageFile: File, isVideo: Boolean): Boolean
 
     /**
      * Lấy tất cả story từ collection "stories"
@@ -71,13 +72,19 @@ class FirebaseStoryService(
         }
     }
 
-    override suspend fun uploadStory(story: Story, imageFile: File): Boolean {
+    override suspend fun uploadStory(story: Story, imageFile: File, isVideo: Boolean): Boolean {
         return try {
             Log.d("FirebaseStoryService", "Uploading story image to Cloudinary...")
-
             // 1️⃣ Upload ảnh lên Cloudinary
-            val result = cloudinary.uploadImage(imageFile, folder = "stories")
-            Log.d("FirebaseStoryService", "Uploaded to Cloudinary: ${result.secureUrl}")
+            // nếu mà là Video
+            var result: CloudinaryUploadResult? = null
+            if (isVideo) {
+                result = cloudinary.uploadVideo(imageFile, folder = "stories")
+                Log.d("FirebaseStoryService", "Uploaded to Cloudinary: ${result.secureUrl}")
+            } else {
+                result = cloudinary.uploadImage(imageFile, folder = "stories")
+                Log.d("FirebaseStoryService", "Uploaded to Cloudinary: ${result.secureUrl}")
+            }
 
             // 2️⃣ Tạo document reference Firestore (ID tự sinh)
             val docRef = db.collection("stories").document()
@@ -88,7 +95,8 @@ class FirebaseStoryService(
                 "image_url" to result.secureUrl,
                 "expire_at" to Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000),
                 "viewers" to story.viewers,
-                "created_at" to FieldValue.serverTimestamp()
+                "created_at" to FieldValue.serverTimestamp(),
+                "duration_ms" to story.durationMs
             )
 
             story.music?.let { music ->

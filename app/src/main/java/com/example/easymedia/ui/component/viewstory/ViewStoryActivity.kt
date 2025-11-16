@@ -6,8 +6,12 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
+import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import com.bumptech.glide.Glide
 import com.example.easymedia.R
 import com.example.easymedia.data.model.Music
@@ -20,6 +24,7 @@ import jp.shts.android.storiesprogressview.StoriesProgressView
 class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListener {
     private val viewStoryViewModel: ViewStoryViewModel by viewModels()
     private lateinit var binding: ActivityViewStoryBinding
+    private var exoPlayer: ExoPlayer? = null
     private var listStory: List<Story> = emptyList()
     private val durations = mutableListOf<Long>()
 
@@ -32,6 +37,11 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
 
     // index hiện tại (story đang hiển thị)
     private var counter = 0
+
+    private fun initPlayer() {
+        exoPlayer = ExoPlayer.Builder(this).build()
+        binding.videoStory.player = exoPlayer
+    }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,6 +61,8 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
             finish() // không có story thì đóng activity
             return
         }
+
+        initPlayer()
 
         // load thông tin user (ví dụ hiển thị avatar/username)
         viewStoryViewModel.getInforUser(listStory[0].userId)
@@ -104,28 +116,84 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
             }
             true
         }
+
+        binding.videoStory.setOnTouchListener { view, event ->
+            val width = view.width
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    pressTime = System.currentTimeMillis()
+                    binding.storiesProgressView.pause()
+                    exoPlayer?.pause()
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    val duration = System.currentTimeMillis() - pressTime
+                    if (duration < limit) {
+                        if (event.x < width / 2f) {
+                            // tap bên trái → quay lại story trước
+                            reverseStoryProperly()
+                        } else {
+                            // tap bên phải → tới story sau
+                            binding.storiesProgressView.skip()
+                        }
+                    } else {
+                        binding.storiesProgressView.resume()
+                        exoPlayer?.play()
+                    }
+                }
+            }
+            true
+        }
     }
 
-    // ----- Story / UI helpers -----
+    private fun isVideo(url: String): Boolean {
+        return url.endsWith(".mp4")
+    }
+
+    private fun playVideo(url: String) {
+        binding.videoStory.visibility = View.VISIBLE
+        binding.imageStory.visibility = View.GONE
+
+        val mediaItem = MediaItem.fromUri(url)
+
+        exoPlayer?.apply {
+            setMediaItem(mediaItem)
+            prepare()      // chuẩn bị buffer ngay
+            playWhenReady = true
+        }
+
+        // Khi playback kết thúc → skip story tiếp theo
+        exoPlayer?.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_ENDED) {
+                    binding.storiesProgressView.skip()
+                }
+            }
+        })
+    }
 
     private fun loadStoryAt(index: Int) {
-        if (index !in listStory.indices) return
+        exoPlayer?.stop()
+        exoPlayer?.clearMediaItems()
         val story = listStory[index]
         binding.tvTime.text = TimeFormatter.formatTimeAgo(story.createdAt!!)
-        Glide.with(this)
-            .load(story.imageUrl)
-            .error(R.drawable.ic_avatar)
-            .into(binding.imageStory)
-
-        // play music tương ứng (nếu có)
-        playMusicForStory(story)
+        if (isVideo(story.imageUrl)) {
+            playVideo(story.imageUrl)
+        } else {
+            binding.videoStory.visibility = View.GONE
+            binding.imageStory.visibility = View.VISIBLE
+            playMusicForStory(story)
+            Glide.with(this)
+                .load(story.imageUrl)
+                .error(R.drawable.ic_avatar)
+                .into(binding.imageStory)
+        }
     }
 
     private fun prepareDurations() {
         durations.clear()
         listStory.forEach { story ->
-            val durStr = story.music?.duration ?: ""
-            durations.add(parseDurationToMillis(durStr))
+            durations.add(story.durationMs)
         }
         // đảm bảo kích thước khớp (thư viện yêu cầu)
         if (durations.size != listStory.size) {
@@ -136,7 +204,6 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
     }
 
     // ----- Media helpers -----
-
     private fun playMusicForStory(story: Story) {
         val music = story.music ?: Music()
         if (music.url.isNullOrBlank()) {
@@ -243,6 +310,9 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
     override fun onDestroy() {
         releaseMediaPlayer()
         binding.storiesProgressView.destroy()
+        exoPlayer?.release()
+        exoPlayer = null
+        binding.storiesProgressView.destroy()
         super.onDestroy()
     }
 
@@ -276,24 +346,23 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
         if (counter > 0) {
             counter--
 
-            // Dừng và reset view cũ
+            // Reset lại storiesProgressView từ đầu
             binding.storiesProgressView.destroy()
 
-            // Reset lại thanh tiến trình
             binding.storiesProgressView.setStoriesCount(listStory.size)
             binding.storiesProgressView.setStoriesCountWithDurations(durations.toLongArray())
             binding.storiesProgressView.setStoriesListener(this)
 
-            // Bắt đầu lại và chỉ chạy story hiện tại
+            // Start từ story 0
             binding.storiesProgressView.startStories()
 
-            // Skip qua các story trước story hiện tại
+            // Skip đến story cần hiển thị
             for (i in 0 until counter) {
                 binding.storiesProgressView.skip()
             }
 
-            // Cuối cùng, load lại nội dung story hiện tại
             loadStoryAt(counter)
         }
     }
+
 }

@@ -32,8 +32,8 @@ class StoryViewModel : ViewModel() {
 
     fun uploadStory(story: Story, imageFile: File) {
         viewModelScope.launch(Dispatchers.IO) {
-            val result = storyRepository.uploadStory(story, imageFile)
-            _finish.postValue(true)
+            val result = storyRepository.uploadStory(story, imageFile,false)
+            _finish.postValue(result)
         }
     }
 }

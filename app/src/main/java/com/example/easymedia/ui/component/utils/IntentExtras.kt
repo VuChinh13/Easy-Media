@@ -17,5 +17,17 @@ object IntentExtras {
     const val EXTRA_LIST_POST = "extra_list_post"
     const val EXTRA_POSITION = "extra_position"
     const val RESULT_DATA = "result_data"
+    const val RESULT_DATA_STR_VIDEO = "result_data_str_video"
     const val EXTRA_DATA_STORY = "extra_data_story"
+    const val EXTRA_VIDEO_URI = "extra_video_uri"
+    const val EXTRA_OVERLAY_PATH = "extra_overlay_path"
+    const val EXTRA_BLOCK_W = "extra_block_w"
+    const val EXTRA_BLOCK_H = "extra_block_h"
+    const val EXTRA_TX = "extra_tx"
+    const val EXTRA_TY = "extra_ty"
+    const val EXTRA_TW = "extra_tw"
+    const val EXTRA_TH = "extra_th"
+    const val EXTRA_DURATION_MS = "extra_duration_ms"
+    const val EXTRA_STORY = "extra_story"
+
 }

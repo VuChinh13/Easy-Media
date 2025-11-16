@@ -7,7 +7,7 @@ import java.io.File
 
 interface StoryRepository {
     suspend fun getAllMusics(): List<Music>
-    suspend fun uploadStory(story: Story, imageFile: File): Boolean
+    suspend fun uploadStory(story: Story, imageFile: File, isVideo: Boolean): Boolean
     suspend fun getAllStories(): List<Story>
 }
 
@@ -18,9 +18,10 @@ class StoryRepositoryImpl(private val service: StoryService) : StoryRepository {
 
     override suspend fun uploadStory(
         story: Story,
-        imageFile: File
+        imageFile: File,
+        isVideo: Boolean
     ): Boolean {
-        return service.uploadStory(story, imageFile)
+        return service.uploadStory(story, imageFile, isVideo)
     }
 
     override suspend fun getAllStories(): List<Story> {

@@ -37,5 +37,8 @@ data class Story(
 
     // 🔹 Danh sách ID người đã xem
     // lưu id người mà xem mình thôi á
-    var viewers: List<String> = emptyList()
-): Parcelable
+    var viewers: List<String> = emptyList(),
+
+    @get:PropertyName("duration_ms") @set:PropertyName("duration_ms")
+    var durationMs: Long = 0L
+) : Parcelable

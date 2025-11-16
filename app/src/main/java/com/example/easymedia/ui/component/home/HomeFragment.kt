@@ -1,7 +1,10 @@
 package com.example.easymedia.ui.component.home
 
 import android.app.Activity.RESULT_OK
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -10,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -41,7 +45,6 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
     private lateinit var postAdapter: PostAdapter
     private lateinit var storyAdapter: StoryAdapter
     private var reload = false
-
     private val launcher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result: ActivityResult ->
@@ -50,6 +53,16 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
             val isSucceeds = data?.getBooleanExtra(IntentExtras.RESULT_DATA, false)
             // xử lí khi mà thành công
             if (isSucceeds == true) {
+                homeViewModel.getAllStories()
+            }
+        }
+    }
+
+    // Nhận sự kiện đăng Story bằng Video
+    private val uploadReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val result = intent?.getBooleanExtra(IntentExtras.RESULT_DATA_STR_VIDEO, false)
+            if (result == true) {
                 homeViewModel.getAllStories()
             }
         }
@@ -176,6 +189,21 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         val intent = Intent(requireActivity(), ViewStoryActivity::class.java)
         intent.putParcelableArrayListExtra(IntentExtras.EXTRA_DATA_STORY, ArrayList(listStory))
         startActivity(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        ContextCompat.registerReceiver(
+            requireContext(),
+            uploadReceiver,
+            IntentFilter("com.example.easymedia.UPLOAD_DONE"),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        requireContext().unregisterReceiver(uploadReceiver)
     }
 }
 
