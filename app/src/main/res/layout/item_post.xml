@@ -129,6 +129,7 @@
         android:layout_marginLeft="8dp"
         android:fontFamily="sans-serif-medium"
         android:text="300k"
+        android:padding="5dp"
         android:textColor="@color/black"
         android:textSize="15sp"
         app:layout_constraintBottom_toBottomOf="@+id/iv_like"

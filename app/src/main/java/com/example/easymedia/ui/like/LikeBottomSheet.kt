@@ -1,11 +1,11 @@
-package com.example.easymedia.ui.component.music
+package com.example.easymedia.ui.like
 
 import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.media.MediaPlayer
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AutoCompleteTextView
@@ -20,7 +20,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
-class MusicBottomSheet(private val musicSelected: (Music?) -> Unit) : BottomSheetDialogFragment() {
+class LikeBottomSheet : BottomSheetDialogFragment() {
     private var listMusic = mutableListOf<Music>()
     private lateinit var binding: MusicBottomsheetBinding
     private lateinit var adapter: MusicAdapter

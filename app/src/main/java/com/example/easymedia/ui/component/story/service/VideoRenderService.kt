@@ -185,24 +185,40 @@ class VideoRenderService : Service() {
                                 it.durationMs = getVideoDuration(outputVideo)
                                 val result = storyRepository.uploadStory(it, outputVideo, true)
                                 if (result) {
+                                    // --- 1) cập nhật notification FINAL ở đây ---
+                                    val finalNotif = NotificationCompat.Builder(
+                                        this@VideoRenderService,
+                                        CHANNEL_ID
+                                    )
+                                        .setContentTitle("Tin của bạn đang được đăng")
+                                        .setContentText("Đã xử lý xong.")
+                                        .setSmallIcon(android.R.drawable.ic_media_play)
+                                        .setProgress(0, 0, false)
+                                        .build()
+                                    notificationManager.notify(NOTIFICATION_ID, finalNotif)
+
                                     // thành công thì là true thì gửi 1 cái gì đó về bên HomeActivity thì có dc không
                                     val intent = Intent("com.example.easymedia.UPLOAD_DONE")
-                                    intent.putExtra(IntentExtras.RESULT_DATA_STR_VIDEO, true)
+                                    intent.putExtra(IntentExtras.RESULT_DATA_STR, true)
                                     sendBroadcast(intent)
+                                } else {
+                                    // nếu như mà không thành công thì sao
                                 }
                             } catch (e: Exception) {
                                 Log.e("VideoRenderService", "Upload failed", e)
+                                // tương tự: notify lỗi + broadcast false
+                                val errNotif =
+                                    NotificationCompat.Builder(this@VideoRenderService, CHANNEL_ID)
+                                        .setContentTitle("Lỗi khi xử lý video")
+                                        .setContentText(e.message ?: "Unknown")
+                                        .setSmallIcon(android.R.drawable.stat_notify_error)
+                                        .setProgress(0, 0, false)
+                                        .build()
+                                notificationManager.notify(NOTIFICATION_ID, errNotif)
+
                             }
                         }
                     }
-                    // final update notification to 100%
-                    val finalNotif = NotificationCompat.Builder(this, CHANNEL_ID)
-                        .setContentTitle("Xong - Tin của bạn đã được đăng")
-                        .setContentText("Đã xử lý xong.")
-                        .setSmallIcon(android.R.drawable.ic_media_play)
-                        .setProgress(0, 0, false)
-                        .build()
-                    notificationManager.notify(NOTIFICATION_ID, finalNotif)
                 } else {
                     Log.e(TAG, "FFmpeg failed: $returnCode")
                     Log.e(TAG, session.allLogsAsString)

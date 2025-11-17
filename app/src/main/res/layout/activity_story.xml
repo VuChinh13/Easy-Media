@@ -65,7 +65,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.2" />
+            app:layout_constraintVertical_bias="0.37" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/blockMusic"
@@ -76,7 +76,7 @@
             android:paddingTop="7dp"
             android:paddingRight="10dp"
             android:paddingBottom="7dp"
-            android:visibility="gone"
+            android:visibility="invisible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
@@ -85,9 +85,10 @@
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivMusic"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="35dp"
+                android:layout_height="35dp"
                 android:scaleType="centerCrop"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:shapeAppearanceOverlay="@style/RoundedImageShape"
@@ -97,10 +98,10 @@
                 android:id="@+id/tvTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
+                android:layout_marginLeft="6dp"
                 android:text="Tiêu đề"
                 android:textColor="@color/black"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 app:layout_constraintBottom_toTopOf="@id/tvArtist"
                 app:layout_constraintLeft_toRightOf="@id/ivMusic"
@@ -114,7 +115,7 @@
                 android:layout_marginRight="5dp"
                 android:text="Nguyễn Văn A"
                 android:textColor="@color/black"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 app:layout_constraintBottom_toBottomOf="@id/ivMusic"
                 app:layout_constraintLeft_toLeftOf="@id/tvTitle"
                 app:layout_constraintTop_toBottomOf="@id/tvTitle" />
@@ -432,18 +433,18 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/btnTextYesteryear"
+            android:id="@+id/btnTextJosefinSans"
             android:layout_width="wrap_content"
             android:layout_height="45dp"
             android:layout_marginLeft="10dp"
             android:background="@drawable/bg_text_style"
-            android:fontFamily="@font/yesteryear_regular"
+            android:fontFamily="@font/josefinsans_bold"
             android:gravity="center"
             android:paddingLeft="15dp"
             android:paddingTop="5dp"
             android:paddingRight="15dp"
             android:paddingBottom="5dp"
-            android:text="Yesteryear"
+            android:text="JosefinSans"
             android:textColor="@color/white"
             android:textSize="15sp"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -451,6 +452,17 @@
             app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <ImageView
+        android:id="@+id/btnTrash"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="20dp"
+        android:src="@drawable/ic_delete_story"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
 
     <FrameLayout
         android:id="@+id/loading"
@@ -473,4 +485,5 @@
             android:layout_gravity="center"
             android:indeterminate="true" />
     </FrameLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,14 +1,22 @@
 package com.example.easymedia.ui.component.viewstory
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.LinearLayout
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.toColorInt
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -19,14 +27,20 @@ import com.example.easymedia.data.model.Story
 import com.example.easymedia.databinding.ActivityViewStoryBinding
 import com.example.easymedia.ui.component.utils.IntentExtras
 import com.example.easymedia.ui.component.utils.TimeFormatter
-import jp.shts.android.storiesprogressview.StoriesProgressView
 
-class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListener {
+class ViewStoryActivity : AppCompatActivity() {
     private val viewStoryViewModel: ViewStoryViewModel by viewModels()
     private lateinit var binding: ActivityViewStoryBinding
     private var exoPlayer: ExoPlayer? = null
     private var listStory: List<Story> = emptyList()
     private val durations = mutableListOf<Long>()
+
+    // progress views
+    private val progressBgs = mutableListOf<View>()
+    private val progressFills = mutableListOf<View>()
+
+    // animator
+    private var animator: ValueAnimator? = null
 
     // touch press handling
     private var pressTime = 0L
@@ -72,21 +86,37 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
                 .error(R.drawable.ic_avatar)
                 .into(binding.imageProfile)
             binding.tvUsername.text = user?.username ?: ""
-        }
 
-        // show story đầu tiên
-        counter = 0
-        loadStoryAt(counter)
+            // chuyển sang màn profile
+            binding.tvUsername.setOnClickListener {
+                val intent = Intent().apply {
+                    putExtra(IntentExtras.EXTRA_USER, user)
+                }
+                setResult(RESULT_OK, intent)
+                finish()
+            }
+
+            // chuyển sang màn profile
+            binding.imageProfile.setOnClickListener {
+                val intent = Intent().apply {
+                    putExtra(IntentExtras.EXTRA_USER, user)
+                }
+                setResult(RESULT_OK, intent)
+                finish()
+            }
+
+        }
 
         // chuẩn bị durations (mm:ss -> millis)
         prepareDurations()
-        // set số thanh (nếu cần) và durations
-        binding.storiesProgressView.setStoriesCount(listStory.size)
-        binding.storiesProgressView.setStoriesCountWithDurations(durations.toLongArray())
 
-        // listener và start
-        binding.storiesProgressView.setStoriesListener(this)
-        binding.storiesProgressView.startStories()
+        // tạo progress bar động
+        setupProgressBars(listStory.size)
+
+        // show story đầu tiên và start
+        counter = 0
+        loadStoryAt(counter)
+        startProgressForCurrent()
 
         // touch: nhấn giữ để tạm dừng, chạm nhẹ để skip
         binding.imageStory.setOnTouchListener { view, event ->
@@ -94,7 +124,7 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     pressTime = System.currentTimeMillis()
-                    binding.storiesProgressView.pause()
+                    pauseStory()
                     pauseMedia()
                 }
 
@@ -106,10 +136,10 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
                             reverseStoryProperly()
                         } else {
                             // tap bên phải → tới story sau
-                            binding.storiesProgressView.skip()
+                            skipStory()
                         }
                     } else {
-                        binding.storiesProgressView.resume()
+                        resumeStory()
                         resumeMedia()
                     }
                 }
@@ -122,7 +152,7 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     pressTime = System.currentTimeMillis()
-                    binding.storiesProgressView.pause()
+                    pauseStory()
                     exoPlayer?.pause()
                 }
 
@@ -130,14 +160,12 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
                     val duration = System.currentTimeMillis() - pressTime
                     if (duration < limit) {
                         if (event.x < width / 2f) {
-                            // tap bên trái → quay lại story trước
                             reverseStoryProperly()
                         } else {
-                            // tap bên phải → tới story sau
-                            binding.storiesProgressView.skip()
+                            skipStory()
                         }
                     } else {
-                        binding.storiesProgressView.resume()
+                        resumeStory()
                         exoPlayer?.play()
                     }
                 }
@@ -162,21 +190,24 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
             playWhenReady = true
         }
 
-        // Khi playback kết thúc → skip story tiếp theo
+        // remove previous listener by resetting player listeners (safe approach)
         exoPlayer?.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_ENDED) {
-                    binding.storiesProgressView.skip()
+                    skipStory()
                 }
             }
         })
     }
 
     private fun loadStoryAt(index: Int) {
+        // stop/clear exoplayer before set new
         exoPlayer?.stop()
         exoPlayer?.clearMediaItems()
+
         val story = listStory[index]
         binding.tvTime.text = TimeFormatter.formatTimeAgo(story.createdAt!!)
+
         if (isVideo(story.imageUrl)) {
             playVideo(story.imageUrl)
         } else {
@@ -188,20 +219,221 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
                 .error(R.drawable.ic_avatar)
                 .into(binding.imageStory)
         }
+
+        // cập nhật trạng thái progress visuals:
+        // những fill trước index -> đầy, fill index -> giữ whatever, fill sau -> rỗng
+        for (i in progressFills.indices) {
+            val lp = progressFills[i].layoutParams
+            if (i < index) {
+                lp.width = (progressFills[i].parent as View).width
+            } else if (i == index) {
+                lp.width = 0
+            } else {
+                lp.width = 0
+            }
+            progressFills[i].layoutParams = lp
+            progressFills[i].requestLayout()
+        }
     }
 
     private fun prepareDurations() {
         durations.clear()
         listStory.forEach { story ->
+            // nếu Story có field durationMs (bạn dùng), dùng nó
             durations.add(story.durationMs)
         }
-        // đảm bảo kích thước khớp (thư viện yêu cầu)
+        // đảm bảo kích thước khớp
         if (durations.size != listStory.size) {
-            // fallback: nếu có bất đồng, gán mặc định 5s cho tất cả
             durations.clear()
             repeat(listStory.size) { durations.add(5000L) }
         }
     }
+
+    // ----- Progress bar dynamic -----
+    private fun setupProgressBars(count: Int) {
+        progressBgs.clear()
+        progressFills.clear()
+        binding.progressContainer.removeAllViews()
+
+        for (i in 0 until count) {
+            val frame = FrameLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(0, 4.dp(), 1f).also {
+                    val m = 2.dp()
+                    (it as LinearLayout.LayoutParams).marginStart = m
+                    it.marginEnd = m
+                }
+            }
+
+            val bg = View(this).apply {
+                setBackgroundColor("#898989".toColorInt())
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+
+            val fill = View(this).apply {
+                setBackgroundColor(resources.getColor(R.color.white, nullOrGetTheme()))
+                layoutParams = FrameLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT)
+            }
+
+            frame.addView(bg)
+            frame.addView(fill)
+
+            binding.progressContainer.addView(frame)
+            progressBgs.add(bg)
+            progressFills.add(fill)
+        }
+    }
+
+    // helper to get theme for color fetch across API
+    private fun nullOrGetTheme() =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) theme else null
+
+    // Start animator for current index
+    private fun startProgressForCurrent() {
+        clearAnimator()
+
+        // safety
+        if (currentIndexOutOfRange()) return
+
+        val fill = progressFills[counter]
+        val parent = fill.parent as View
+        val targetWidth = parent.width
+
+        // if width not measured yet, post until measured
+        if (targetWidth == 0) {
+            parent.post { startProgressForCurrent() }
+            return
+        }
+
+        // reset current fill to 0 before animating
+        fill.layoutParams.width = 0
+        fill.requestLayout()
+
+        val duration = durations.getOrNull(counter) ?: 5000L
+
+        animator = ValueAnimator.ofInt(0, targetWidth).apply {
+            this.duration = duration
+            addUpdateListener { animation ->
+                val value = animation.animatedValue as Int
+                fill.layoutParams.width = value
+                fill.requestLayout()
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    // khi hoàn thành thanh hiện tại, đi next
+                    // đảm bảo gọi next chỉ khi animator không bị cancel
+                    if (!isCancelledAnimator(animation)) {
+                        goToNextFromAnimator()
+                    }
+                }
+            })
+            start()
+        }
+    }
+
+    private fun isCancelledAnimator(animation: Animator?) =
+        // ValueAnimator không expose cancelled flag; check animator?.isRunning false and play state?
+        animator == null || animator?.isRunning == false && animator?.animatedFraction != 1f
+
+    private fun goToNextFromAnimator() {
+        // tiến sang story tiếp theo
+        if (counter < listStory.size - 1) {
+            counter++
+            loadStoryAt(counter)
+            startProgressForCurrent()
+        } else {
+            onComplete()
+        }
+    }
+
+    private fun skipStory() {
+        // mark current fill full and go next
+        if (currentIndexOutOfRange()) return
+        val fill = progressFills[counter]
+        val parent = fill.parent as View
+        val fullWidth = parent.width
+        // cancel animator first
+        clearAnimator()
+        fill.layoutParams.width = fullWidth
+        fill.requestLayout()
+
+        // next
+        if (counter < listStory.size - 1) {
+            counter++
+            loadStoryAt(counter)
+            startProgressForCurrent()
+        } else {
+            onComplete()
+        }
+    }
+
+    private fun previousStory() {
+        // cho tương tự Instagram: quay về story trước và bắt đầu từ 0
+        if (counter > 0) {
+            clearAnimator()
+            // reset current fill to 0
+            progressFills[counter].layoutParams.width = 0
+            progressFills[counter].requestLayout()
+
+            counter--
+            // reset the target previous fill to 0 (we want to animate it)
+            progressFills[counter].layoutParams.width = 0
+            progressFills[counter].requestLayout()
+
+            loadStoryAt(counter)
+            startProgressForCurrent()
+        } else {
+            // nếu đang ở story đầu, restart nó
+            clearAnimator()
+            progressFills[0].layoutParams.width = 0
+            progressFills[0].requestLayout()
+            loadStoryAt(0)
+            startProgressForCurrent()
+        }
+    }
+
+    private fun reverseStoryProperly() {
+        // lùi 1 story (same as previousStory but kept function name)
+        previousStory()
+    }
+
+    private fun pauseStory() {
+        try {
+            animator?.pause()
+        } catch (e: Exception) {
+            // API fallback: cancel if pause not supported
+            animator?.cancel()
+        }
+    }
+
+    private fun resumeStory() {
+        try {
+            animator?.resume()
+        } catch (e: Exception) {
+            // nếu resume không có, restart từ vị trí hiện tại bằng cách lấy fraction -> estimate remaining time
+            // fallback đơn giản: restart using remaining fraction
+            animator?.let {
+                if (!it.isRunning) {
+                    startProgressForCurrent()
+                }
+            }
+        }
+    }
+
+    private fun clearAnimator() {
+        try {
+            animator?.removeAllUpdateListeners()
+            animator?.cancel()
+        } catch (e: Exception) {
+            // ignore
+        } finally {
+            animator = null
+        }
+    }
+
+    private fun currentIndexOutOfRange() = counter < 0 || counter >= progressFills.size
 
     // ----- Media helpers -----
     private fun playMusicForStory(story: Story) {
@@ -224,7 +456,7 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
                 }
                 setOnCompletionListener {
                     Log.d("MusicPlayer", "Completed: ${music.title}")
-                    // chỉ giải phóng; không tự move story (StoriesProgressView điều khiển chuyển story theo duration)
+                    // chỉ giải phóng; không tự move story (chúng ta dùng duration của story)
                     it.release()
                     mediaPlayer = null
                 }
@@ -249,7 +481,6 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
 
     private fun resumeMedia() {
         try {
-            // resume nếu đã có instance và chưa hoàn tất
             mediaPlayer?.let {
                 if (!it.isPlaying) {
                     it.start()
@@ -277,47 +508,20 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
         }
     }
 
-    // ----- StoriesProgressView callbacks -----
-
-    override fun onNext() {
-        // storiesProgressView đã chuyển sang story tiếp theo
-        counter++
-        if (counter < listStory.size) {
-            loadStoryAt(counter)
-        } else {
-            // index vượt quá, bảo đảm kết thúc
-            onComplete()
-        }
-    }
-
-    override fun onPrev() {
-        // người dùng chuyển về story trước
-        counter--
-        if (counter >= 0) {
-            loadStoryAt(counter)
-        } else {
-            // nếu âm, set lại 0
-            counter = 0
-            loadStoryAt(counter)
-        }
-    }
-
-    override fun onComplete() {
-        // khi chạy hết stories
+    // ----- Completion / lifecycle -----
+    private fun onComplete() {
         finish()
     }
 
     override fun onDestroy() {
         releaseMediaPlayer()
-        binding.storiesProgressView.destroy()
+        clearAnimator()
         exoPlayer?.release()
         exoPlayer = null
-        binding.storiesProgressView.destroy()
         super.onDestroy()
     }
 
     // ----- utility -----
-
     private fun parseDurationToMillis(durationStr: String): Long {
         if (durationStr.isBlank()) return 5000L // fallback mặc định 5s
 
@@ -342,27 +546,6 @@ class ViewStoryActivity : AppCompatActivity(), StoriesProgressView.StoriesListen
         }
     }
 
-    private fun reverseStoryProperly() {
-        if (counter > 0) {
-            counter--
-
-            // Reset lại storiesProgressView từ đầu
-            binding.storiesProgressView.destroy()
-
-            binding.storiesProgressView.setStoriesCount(listStory.size)
-            binding.storiesProgressView.setStoriesCountWithDurations(durations.toLongArray())
-            binding.storiesProgressView.setStoriesListener(this)
-
-            // Start từ story 0
-            binding.storiesProgressView.startStories()
-
-            // Skip đến story cần hiển thị
-            for (i in 0 until counter) {
-                binding.storiesProgressView.skip()
-            }
-
-            loadStoryAt(counter)
-        }
-    }
-
+    // extension dp
+    private fun Int.dp(): Int = (this * resources.displayMetrics.density).toInt()
 }

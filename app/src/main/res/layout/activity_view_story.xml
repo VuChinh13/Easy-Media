@@ -31,14 +31,17 @@
         app:layout_constraintTop_toTopOf="parent"
         app:use_controller="false" />
 
-    <jp.shts.android.storiesprogressview.StoriesProgressView
-        android:id="@+id/storiesProgressView"
-        android:layout_width="0dp"
-        android:layout_height="4dp"
+    <LinearLayout
+        android:id="@+id/progressContainer"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
         android:layout_marginTop="15dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"/>
+
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guidelineBottom"
@@ -52,11 +55,11 @@
         android:id="@+id/cardView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
         android:layout_marginTop="10dp"
         app:cardCornerRadius="20dp"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/storiesProgressView">
+        app:layout_constraintTop_toBottomOf="@id/progressContainer">
 
         <ImageView
             android:id="@+id/imageProfile"
@@ -70,7 +73,7 @@
         android:id="@+id/tvUsername"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="15dp"
+        android:layout_marginStart="15dp"
         android:textColor="@color/white"
         android:textSize="15sp"
         android:textStyle="bold"
@@ -82,7 +85,7 @@
         android:id="@+id/tvTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
         android:text="19 giờ"
         android:textColor="#898989"
         android:textStyle="bold"

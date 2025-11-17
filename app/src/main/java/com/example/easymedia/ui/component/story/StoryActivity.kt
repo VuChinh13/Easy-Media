@@ -11,6 +11,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.media.MediaMetadataRetriever
@@ -21,6 +22,8 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -38,11 +41,15 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.example.easymedia.R
+import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
+import com.example.easymedia.data.data_source.firebase.FirebaseStoryService
 import com.example.easymedia.data.model.Music
 import com.example.easymedia.data.model.Story
 import com.example.easymedia.data.model.VideoEditState
+import com.example.easymedia.data.repository.StoryRepositoryImpl
 import com.example.easymedia.databinding.ActivityStoryBinding
 import com.example.easymedia.ui.component.music.MusicBottomSheet
+import com.example.easymedia.ui.component.story.service.ImageRenderService
 import com.example.easymedia.ui.component.story.service.VideoRenderService
 import com.example.easymedia.ui.component.utils.IntentExtras
 import com.example.easymedia.ui.component.utils.SharedPrefer
@@ -55,15 +62,27 @@ class StoryActivity : AppCompatActivity() {
     private lateinit var player: ExoPlayer
     private val storyViewModel: StoryViewModel by viewModels()
     private val overlayInfo = TextOverlayInfo()
+    private val overlayInfoMusic = TextOverlayInfo()
     private var success = false
     private lateinit var binding: ActivityStoryBinding
     private lateinit var musicPlayer: ExoPlayer   // Player riêng cho nhạc nền (optional)
     private var videoEditState = VideoEditState() // trạng thái mặc định
     private var selectedUri: Uri? = null
     private var isMuted = false
+    private val imgService by lazy {
+        ImageRenderService(
+            this,
+            StoryRepositoryImpl(FirebaseStoryService(cloudinary = CloudinaryServiceImpl()))
+        )
+    }
     private var isSelectedImage = true // mặc định là chọn ảnh đe
     private var textStyleSelected = "lato"
     private var musicSelected: Music? = null
+    private var originalX = 0f
+    private var originalY = 0f
+    private var originalMusicX = 0f
+    private var originalMusicY = 0f
+    private lateinit var shakeAnim: Animation
     private val bottomSheet = MusicBottomSheet { music ->
         finishChooseMusic(music)
     }
@@ -75,15 +94,33 @@ class StoryActivity : AppCompatActivity() {
 
         // khởi tạo musicPlayer mặc định để tránh crash
         musicPlayer = ExoPlayer.Builder(this).build()
-
+        shakeAnim = AnimationUtils.loadAnimation(this, R.anim.shake)
         setupUI()
+
+        with(binding) {
+            etEditableText.post {
+                originalX = etEditableText.x
+                originalY = etEditableText.y
+            }
+        }
+
+        with(binding) {
+            blockMusic.post {
+                originalMusicX = blockMusic.x
+                originalMusicY = blockMusic.y
+            }
+        }
 
         // ----- Click listener ngắn gọn (gọi từ UI) -----
         binding.btnSharedStory.setOnClickListener {
 
             // nếu mà là ảnh
             if (isSelectedImage) {
-                binding.loading.visibility = View.VISIBLE
+                if (::musicPlayer.isInitialized) {
+                    musicPlayer.stop()
+                    musicPlayer.release()
+                }
+                binding.btnSharedStory.visibility = View.GONE
                 // Tạo đối tượng Story
                 val userId = SharedPrefer.getId()
                 val story = Story(
@@ -91,12 +128,17 @@ class StoryActivity : AppCompatActivity() {
                         musicSelected?.duration ?: "0:00"
                     )
                 )
+                Toast.makeText(this, "Tin của bạn đang được đăng", Toast.LENGTH_SHORT)
+                    .show()
                 binding.blockImage.post {
-                    val bitmap = captureBlockImage()
-                    if (bitmap != null) {
-                        storyViewModel.uploadStory(story, bitmapToFile(this, bitmap))
+                    imgService.captureAndUpload(
+                        binding.blockImage,
+                        story
+                    ) {
+                        Toast.makeText(this, "Đăng tin thất bại!", Toast.LENGTH_SHORT).show()
                     }
                 }
+                finish()
             } else {
                 // nếu mà là video
                 Toast.makeText(this@StoryActivity, "Đang xử lí video", Toast.LENGTH_LONG).show()
@@ -225,13 +267,16 @@ class StoryActivity : AppCompatActivity() {
             private var dX = 0f
             private var dY = 0f
 
+            @SuppressLint("SetTextI18n")
             override fun onTouch(view: View, event: MotionEvent): Boolean {
-
                 when (event.action) {
 
                     MotionEvent.ACTION_DOWN -> {
                         dX = view.x - event.rawX
                         dY = view.y - event.rawY
+
+                        // hiển thị thùng rác
+                        binding.btnTrash.visibility = View.VISIBLE
                     }
 
                     MotionEvent.ACTION_MOVE -> {
@@ -246,6 +291,36 @@ class StoryActivity : AppCompatActivity() {
                         // Lưu lại vị trí cuối cùng
                         overlayInfo.posX = view.x
                         overlayInfo.posY = view.y
+
+                        // kiểm tra xem là có chạm thùng rác hay không
+                        val trashRect = Rect()
+                        binding.btnTrash.getHitRect(trashRect)
+                        if (trashRect.contains(
+                                (view.x + view.width / 2).toInt(),
+                                (view.y + view.height / 2).toInt()
+                            )
+                        ) {
+                            // chạy hiệu ứng rung thùng rác
+                            binding.btnTrash.startAnimation(shakeAnim)
+                            // reset bằng animation để không bị nhảy đột ngột
+                            binding.etEditableText.animate()
+                                .alpha(0f)
+                                .setDuration(120)
+                                .withEndAction {
+                                    // sau khi đã ẩn về mặt hiển thị
+                                    binding.etEditableText.alpha =
+                                        1f   // reset alpha để lần sau hiện lại bình thường
+                                    binding.etEditableText.translationX = 0f
+                                    binding.etEditableText.translationY = 0f
+                                    binding.etEditableText.x = originalX
+                                    binding.etEditableText.y = originalY
+                                    binding.etEditableText.setText("Hãy viết gì đó...")
+                                    binding.etEditableText.visibility = View.INVISIBLE
+                                }.start()
+
+                        }
+                        // Ẩn thùng rác khi kết thúc kéo
+                        binding.btnTrash.visibility = View.GONE
                     }
                 }
                 return true
@@ -256,11 +331,15 @@ class StoryActivity : AppCompatActivity() {
             private var dX = 0f
             private var dY = 0f
 
+            @SuppressLint("SetTextI18n")
             override fun onTouch(view: View, event: MotionEvent): Boolean {
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
                         dX = view.x - event.rawX
                         dY = view.y - event.rawY
+
+                        // hiển thị thùng rác
+                        binding.btnTrash.visibility = View.VISIBLE
                     }
 
                     MotionEvent.ACTION_MOVE -> {
@@ -269,6 +348,47 @@ class StoryActivity : AppCompatActivity() {
                             .y(event.rawY + dY)
                             .setDuration(0)
                             .start()
+                    }
+
+                    MotionEvent.ACTION_UP -> {
+                        // Lưu lại vị trí cuối cùng
+                        // chú ý đoạn này
+                        overlayInfoMusic.posX = view.x
+                        overlayInfoMusic.posY = view.y
+
+                        // kiểm tra xem là có chạm thùng rác hay không
+                        val trashRect = Rect()
+                        binding.btnTrash.getHitRect(trashRect)
+                        if (trashRect.contains(
+                                (view.x + view.width / 2).toInt(),
+                                (view.y + view.height / 2).toInt()
+                            )
+                        ) {
+                            // chạy hiệu ứng rung thùng rác
+                            binding.btnTrash.startAnimation(shakeAnim)
+
+                            // tắt nhạc và xóa nhạc mà được chọn
+                            musicPlayer.stop()
+                            musicPlayer.release()
+                            musicSelected = null
+
+                            // reset bằng animation để không bị nhảy đột ngột
+                            binding.blockMusic.animate()
+                                .alpha(0f)
+                                .setDuration(120)
+                                .withEndAction {
+                                    // sau khi đã ẩn về mặt hiển thị
+                                    binding.blockMusic.alpha =
+                                        1f   // reset alpha để lần sau hiện lại bình thường
+                                    binding.blockMusic.translationX = 0f
+                                    binding.blockMusic.translationY = 0f
+                                    binding.blockMusic.x = originalMusicX
+                                    binding.blockMusic.y = originalMusicY
+                                    binding.blockMusic.visibility = View.INVISIBLE
+                                }.start()
+                        }
+                        // Ẩn thùng rác khi kết thúc kéo
+                        binding.btnTrash.visibility = View.GONE
                     }
                 }
                 return true
@@ -300,7 +420,7 @@ class StoryActivity : AppCompatActivity() {
         }
 
         // sự kiện chọn màu
-        binding.btnTextYesteryear.setOnClickListener {
+        binding.btnTextJosefinSans.setOnClickListener {
             changeBackgroundText2(textStyleSelected)
             textStyleSelected = "yesteryear"
             changeBackgroundText(textStyleSelected)
@@ -336,35 +456,6 @@ class StoryActivity : AppCompatActivity() {
         binding.btnClose.setOnClickListener { finish() }
     }
 
-    private fun captureBlockImage(): Bitmap? {
-        val view = binding.blockImage
-
-        // Kiểm tra view đã có kích thước
-        if (view.width == 0 || view.height == 0) return null
-
-        // Tạo bitmap cùng kích thước với view
-        val bitmap = createBitmap(view.width, view.height)
-
-        // Tạo canvas từ bitmap
-        val canvas = Canvas(bitmap)
-
-        // Vẽ view lên canvas (bao gồm tất cả view con bên trong)
-        view.draw(canvas)
-
-        return bitmap
-    }
-
-    fun bitmapToFile(context: Context, bitmap: Bitmap): File {
-        // Tạo file tạm trong thư mục cache
-        val file = File(context.cacheDir, "story_${System.currentTimeMillis()}.png")
-
-        // Ghi bitmap ra file
-        FileOutputStream(file).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-        }
-
-        return file
-    }
 
     /** Hiển thị preview ảnh hoặc video **/
     private fun showPreview(uri: Uri) {
@@ -537,7 +628,6 @@ class StoryActivity : AppCompatActivity() {
                 prepare()
             }
         }
-
         binding.blockMusic.visibility = View.VISIBLE
         binding.tvArtist.text = music?.artist
         binding.tvTitle.text = music?.title
@@ -567,8 +657,8 @@ class StoryActivity : AppCompatActivity() {
             }
 
             "yesteryear" -> {
-                binding.btnTextYesteryear.setBackgroundResource(R.drawable.bg_text_style_selection) // bg_new.xml
-                binding.btnTextYesteryear.setTextColor(Color.BLACK)
+                binding.btnTextJosefinSans.setBackgroundResource(R.drawable.bg_text_style_selection) // bg_new.xml
+                binding.btnTextJosefinSans.setTextColor(Color.BLACK)
                 val typeface = ResourcesCompat.getFont(this, R.font.yesteryear_regular)
                 binding.etEditableText.typeface = typeface
             }
@@ -593,8 +683,8 @@ class StoryActivity : AppCompatActivity() {
             }
 
             "yesteryear" -> {
-                binding.btnTextYesteryear.setBackgroundResource(R.drawable.bg_text_style) // bg_new.xml
-                binding.btnTextYesteryear.setTextColor(Color.WHITE)
+                binding.btnTextJosefinSans.setBackgroundResource(R.drawable.bg_text_style) // bg_new.xml
+                binding.btnTextJosefinSans.setTextColor(Color.WHITE)
             }
         }
     }

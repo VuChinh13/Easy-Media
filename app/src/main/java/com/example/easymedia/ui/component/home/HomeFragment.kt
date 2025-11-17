@@ -1,5 +1,6 @@
 package com.example.easymedia.ui.component.home
 
+import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -43,6 +44,7 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
     private lateinit var binding: FragmentHomeBinding
     private val homeViewModel: HomeViewModel by viewModels()
     private lateinit var postAdapter: PostAdapter
+    private var isNotification = false
     private lateinit var storyAdapter: StoryAdapter
     private var reload = false
     private val launcher = registerForActivityResult(
@@ -58,11 +60,23 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         }
     }
 
+    @SuppressLint("SuspiciousIndentation")
+    val launcherStory = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result: ActivityResult ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data
+            val user = data?.getParcelableExtra<User>(IntentExtras.EXTRA_USER)
+            onAvatarClick2(user)
+        }
+    }
+
     // Nhận sự kiện đăng Story bằng Video
     private val uploadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val result = intent?.getBooleanExtra(IntentExtras.RESULT_DATA_STR_VIDEO, false)
+            val result = intent?.getBooleanExtra(IntentExtras.RESULT_DATA_STR, false)
             if (result == true) {
+                isNotification = true
                 homeViewModel.getAllStories()
             }
         }
@@ -154,6 +168,15 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
 
         // hiển thị giao diện Story
         homeViewModel.story.observe(viewLifecycleOwner) {
+            if (isNotification) {
+                isNotification = false
+                Toast.makeText(
+                    requireContext(),
+                    "Tin của bạn đã được đăng thành công",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+            }
             Log.d("CheckListStory", it.toString())
             storyAdapter.updateListStory(it)
             postAdapter.notifyItemChanged(0)
@@ -180,6 +203,23 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         }
     }
 
+    fun onAvatarClick2(user: User?) {
+        if (user?.id != SharedPrefer.getId()) {
+            val profileFragment = ProfileFragment()
+            val bundle = Bundle().apply {
+                putParcelable(IntentExtras.EXTRA_USER, user)
+            }
+            profileFragment.arguments = bundle
+            val transaction = requireActivity().supportFragmentManager.beginTransaction()
+            transaction.add(R.id.fragment, profileFragment)
+            transaction.addToBackStack(null)
+            transaction.commit()
+        } else {
+            // Chuyển sang bên trang đó là trang MyProfile
+            (activity as MainActivity).switchScreenMyProfile()
+        }
+    }
+
     override fun onStoryClick() {
         val intent = Intent(requireActivity(), StoryActivity::class.java)
         launcher.launch(intent)
@@ -188,7 +228,7 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
     override fun switchScreenStory(listStory: List<Story>) {
         val intent = Intent(requireActivity(), ViewStoryActivity::class.java)
         intent.putParcelableArrayListExtra(IntentExtras.EXTRA_DATA_STORY, ArrayList(listStory))
-        startActivity(intent)
+        launcherStory.launch(intent)
     }
 
     override fun onStart() {
