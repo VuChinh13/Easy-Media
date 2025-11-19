@@ -38,14 +38,15 @@ class AutocompleteAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val result = items[position]
 
-        // --- CODE ĐỀ XUẤT CẢI TIẾN ---
         val segmentStrings = result.segments.mapNotNull { segment ->
             when (segment) {
                 is AutocompleteSegmentPlainText -> segment.plainText.ifEmpty { null }
                 is AutocompleteSegmentPoiCategory -> {
                     // Nếu không có tên khớp thay thế, sử dụng tên danh mục POI
-                    segment.matchedAlternativeName.ifEmpty { segment.poiCategory.name }.ifEmpty { null }
+                    segment.matchedAlternativeName.ifEmpty { segment.poiCategory.name }
+                        .ifEmpty { null }
                 }
+
                 is AutocompleteSegmentBrand -> segment.brand.name.ifEmpty { null }
                 else -> null // Loại bỏ các loại segment không cần thiết hoặc chuỗi rỗng
             }

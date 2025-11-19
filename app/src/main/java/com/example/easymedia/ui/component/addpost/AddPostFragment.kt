@@ -1,6 +1,7 @@
 package com.example.easymedia.ui.component.addpost
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,6 +16,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.example.easymedia.databinding.FragmentAddPostBinding
 import com.example.easymedia.ui.component.main.MainActivity
+import com.example.easymedia.ui.component.map.MapStoryActivity
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import java.io.File
 import java.io.FileOutputStream
@@ -54,6 +56,11 @@ class AddPostFragment : Fragment() {
 
         binding.ivClose.setOnClickListener {
             parentFragmentManager.popBackStack()
+        }
+
+        binding.btnLocation.setOnClickListener {
+            val intent = Intent(requireContext(), MapStoryActivity::class.java)
+            startActivity(intent)
         }
 
         addPostViewModel.result.observe(viewLifecycleOwner) { result ->
