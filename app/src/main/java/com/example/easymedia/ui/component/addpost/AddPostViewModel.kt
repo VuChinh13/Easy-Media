@@ -35,7 +35,7 @@ class AddPostViewModel : ViewModel() {
                 // không cần quan tâm id bài viết trả về
                 _result.postValue(true to "")
             }.onFailure { e ->
-                 Log.d("CheckLoi",e.toString())
+                Log.d("CheckLoi", e.toString())
                 _result.postValue(false to (e.message ?: "Đã có lỗi xảy ra"))
             }
         }

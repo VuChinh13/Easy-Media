@@ -4,6 +4,7 @@ import com.example.easymedia.data.data_source.firebase.PostService
 import com.example.easymedia.data.model.Comment
 import com.example.easymedia.data.model.Location
 import com.example.easymedia.data.model.Post
+import com.example.easymedia.data.model.User
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.Query
@@ -34,6 +35,7 @@ interface PostRepository {
     suspend fun getComments(postId: String): Result<List<Comment>>
     suspend fun deleteComment(postId: String, commentId: String)
     suspend fun fetchFirstPage(pageSize: Int): Pair<List<Post>, DocumentSnapshot?>
+    suspend fun getUsersWhoLiked(postId: String): List<User>
     suspend fun fetchNextPage(
         pageSize: Int,
         lastDoc: DocumentSnapshot?
@@ -82,6 +84,9 @@ class PostRepositoryImpl(
 
     override suspend fun fetchFirstPage(pageSize: Int): Pair<List<Post>, DocumentSnapshot?> =
         service.getPostsPaginated(pageSize, null)
+
+    override suspend fun getUsersWhoLiked(postId: String): List<User> =
+        service.getUsersWhoLiked(postId)
 
     override suspend fun fetchNextPage(
         pageSize: Int,

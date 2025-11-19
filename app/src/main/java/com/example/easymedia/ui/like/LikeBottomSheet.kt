@@ -3,7 +3,6 @@ package com.example.easymedia.ui.like
 import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.PorterDuff
-import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,28 +12,36 @@ import android.widget.ImageView
 import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.easymedia.R
-import com.example.easymedia.data.model.Music
-import com.example.easymedia.databinding.MusicBottomsheetBinding
-import com.example.easymedia.ui.component.music.adapter.MusicAdapter
+import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
+import com.example.easymedia.data.data_source.firebase.FirebasePostService
+import com.example.easymedia.data.repository.PostRepositoryImpl
+import com.example.easymedia.databinding.LikeBottomSheetBinding
+import com.example.easymedia.ui.component.home.OnAvatarClickListener
+import com.example.easymedia.ui.like.adapter.LikeAdapter
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class LikeBottomSheet : BottomSheetDialogFragment() {
-    private var listMusic = mutableListOf<Music>()
-    private lateinit var binding: MusicBottomsheetBinding
-    private lateinit var adapter: MusicAdapter
-    private var mediaPlayer: MediaPlayer? = null
-    private var currentMusic: Music? = null
-    private var isPlayingMusic = true
-    private var pausePosition: Int = 0
+class LikeBottomSheet(val idPost: String, val listener: OnAvatarClickListener?) :
+    BottomSheetDialogFragment() {
+    private val repositoryPost =
+        PostRepositoryImpl(
+            FirebasePostService(cloudinary = CloudinaryServiceImpl())
+        )
+
+    private lateinit var adapter: LikeAdapter
+    private lateinit var binding: LikeBottomSheetBinding
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        binding = MusicBottomsheetBinding.inflate(inflater, container, false)
+        binding = LikeBottomSheetBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -47,7 +54,7 @@ class LikeBottomSheet : BottomSheetDialogFragment() {
                 val behavior = BottomSheetBehavior.from(sheet)
                 val displayMetrics = resources.displayMetrics
                 val screenHeight = displayMetrics.heightPixels
-                val desiredHeight = (screenHeight * 0.8).toInt()
+                val desiredHeight = (screenHeight * 0.75).toInt()
 
                 val layoutParams = sheet.layoutParams
                 layoutParams.height = desiredHeight
@@ -57,11 +64,11 @@ class LikeBottomSheet : BottomSheetDialogFragment() {
                 behavior.maxHeight = desiredHeight
             }
 
-        val searchView = binding.btnSearchMusic
+        val searchView = binding.btnSearchLike
         val searchEditText = searchView.findViewById<AutoCompleteTextView>(
             androidx.appcompat.R.id.search_src_text
         )
-        searchEditText.setTextColor(Color.WHITE)
+        searchEditText.setTextColor(Color.BLACK)
         searchEditText.textSize = 17f
         val searchIcon = searchView.findViewById<ImageView>(
             androidx.appcompat.R.id.search_mag_icon
@@ -77,50 +84,28 @@ class LikeBottomSheet : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = MusicAdapter(listMusic) { selectedMusic ->
-            playMusic(selectedMusic)
-        }
-
+        adapter = LikeAdapter(mutableListOf(), { dismiss() }, listener)
         binding.rcvMusic.layoutManager = LinearLayoutManager(context)
         binding.rcvMusic.adapter = adapter
 
-        setupSearchView()
-
-        binding.btnPause.setOnClickListener {
-            if (isPlayingMusic) {
-                // Tạm dừng nhạc
-                isPlayingMusic = false
-                binding.btnPause.setImageResource(R.drawable.ic_play)
-                mediaPlayer?.pause()
-                pausePosition = mediaPlayer?.currentPosition ?: 0
-            } else {
-                // Nếu chưa có mediaPlayer nhưng có currentMusic -> phát lại từ đầu
-                if (mediaPlayer == null) {
-                    currentMusic?.let {
-                        // playMusic sẽ tạo MediaPlayer mới và auto-start
-                        playMusic(it)
-                    }
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = repositoryPost.getUsersWhoLiked(postId = idPost)
+            withContext(Dispatchers.Main) {
+                if (result.isNotEmpty()) {
+                    // nếu mà ko rỗng
+                    adapter.update(result)
                 } else {
-                    // Tiếp tục phát nhạc từ chỗ dừng (hoặc từ đầu nếu pausePosition == 0)
-                    isPlayingMusic = true
-                    binding.btnPause.setImageResource(R.drawable.ic_pause_media)
-                    mediaPlayer?.seekTo(pausePosition)
-                    mediaPlayer?.start()
+                    binding.tvTitle3.visibility = View.VISIBLE
+                    binding.tvTitle4.visibility = View.VISIBLE
                 }
             }
         }
 
-        // Sự kiện chọn nhạc xong
-        binding.btnNext.setOnClickListener {
-            // hiển thị lại giao diện như bình thường
-            musicSelected(currentMusic)
-            // Đóng BottomSheet
-            dismiss()
-        }
+        setupSearchView()
     }
 
     private fun setupSearchView() {
-        val searchView = binding.btnSearchMusic
+        val searchView = binding.btnSearchLike
 
         // Lắng nghe sự kiện gõ chữ trong SearchView
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -136,61 +121,7 @@ class LikeBottomSheet : BottomSheetDialogFragment() {
         })
     }
 
-    private fun playMusic(music: Music) {
-        isPlayingMusic = true
-        // Nếu đang phát bài khác → dừng lại
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = null
-
-        currentMusic = music
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(music.url)
-            setOnPreparedListener {
-                // Khi chuẩn bị xong thì bắt đầu phát và set UI
-                start()
-                binding.btnPause.setImageResource(R.drawable.ic_pause_media)
-            }
-            setOnCompletionListener {
-                // Khi bài hát phát xong:
-                isPlayingMusic = false
-                // đổi icon thành tam giác (play)
-                binding.btnPause.setImageResource(R.drawable.ic_play)
-                // đặt vị trí pause về 0 để khi ấn play sẽ phát từ đầu
-                pausePosition = 0
-                try {
-                    // đưa con trỏ media về 0, nhưng không release (để có thể start lại)
-                    seekTo(0)
-                } catch (e: Exception) {
-                    // nếu seekTo lỗi, release để đảm bảo trạng thái sạch
-                    // (thường không cần thiết nhưng an toàn)
-                }
-                // Bạn có thể ở đây thực hiện auto-next nếu muốn.
-            }
-            setOnErrorListener { _, what, extra ->
-                // handle error nếu cần
-                false
-            }
-            prepareAsync() // load nhạc online bất đồng bộ
-        }
-
-        binding.blockPlaying.visibility = View.VISIBLE
-        binding.tvTitle.text = music.title
-        binding.tvArtist.text = music.artist
-    }
-
-    fun updateListMusic(newListMusic: MutableList<Music>) {
-        listMusic.clear()
-        listMusic = newListMusic
-        adapter.updateData(this.listMusic)
-    }
-
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-
-        // 👉 Viết logic ở đây khi BottomSheet đóng
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = null
     }
 }

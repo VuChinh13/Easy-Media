@@ -15,7 +15,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.example.easymedia.databinding.FragmentAddPostBinding
 import com.example.easymedia.ui.component.main.MainActivity
-import com.example.easymedia.ui.component.utils.AppToast
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import java.io.File
 import java.io.FileOutputStream

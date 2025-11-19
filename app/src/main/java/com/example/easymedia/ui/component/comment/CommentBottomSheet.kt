@@ -1,6 +1,8 @@
 package com.example.easymedia.ui.component.comment
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -19,6 +21,7 @@ import com.example.easymedia.data.model.Comment
 import com.example.easymedia.data.repository.PostRepositoryImpl
 import com.example.easymedia.databinding.CommentBottomsheetBinding
 import com.example.easymedia.ui.component.comment.adapter.CommentAdapter
+import com.example.easymedia.ui.component.home.OnAvatarClickListener
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -35,7 +38,8 @@ class CommentBottomSheet(
     private val userId: String,
     private val position: Int,
     private var totalComment: Int,
-    private val onCommentChanged: (position: Int, totalComment: Int) -> Unit
+    private val onCommentChanged: (position: Int, totalComment: Int) -> Unit,
+    private val listener: OnAvatarClickListener?
 ) : BottomSheetDialogFragment() {
 
     private lateinit var binding: CommentBottomsheetBinding
@@ -68,6 +72,7 @@ class CommentBottomSheet(
             }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         // Đây là nơi mà thực hiện Logic
@@ -80,12 +85,16 @@ class CommentBottomSheet(
             .into(binding.ivAvatar)
 
         // Khởi tạo Adapter
-        adapter = CommentAdapter(listComment, postId) {
-            reloadComments()
-        }
+        adapter = CommentAdapter(
+            listComment, postId, {
+                reloadComments()
+            }, {
+                // ⬅️ TRUYỀN DISMISS VÀO ĐÂY
+                dismiss()            // <<< BottomSheet tự đóng
+            }, listener
+        )
         binding.rvComments.layoutManager = LinearLayoutManager(context)
         binding.rvComments.adapter = adapter
-
 
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -107,7 +116,6 @@ class CommentBottomSheet(
                 // khi mà lỗi thì làm gì đó
             }
         }
-
 
         // Sự kiện khi mà nhấn đăng comment
         binding.etComment.addTextChangedListener(object : TextWatcher {
@@ -192,6 +200,7 @@ class CommentBottomSheet(
         super.onDestroyView()
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun reloadComments() {
         CoroutineScope(Dispatchers.IO).launch {
             val result = repositoryPost.getComments(postId)
@@ -228,5 +237,4 @@ class CommentBottomSheet(
         binding.tvTitle1.visibility = View.INVISIBLE
         binding.tvTitle2.visibility = View.INVISIBLE
     }
-
 }

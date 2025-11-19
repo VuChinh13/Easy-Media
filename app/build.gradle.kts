@@ -1,8 +1,11 @@
+import com.android.build.gradle.internal.dependency.CONFIG_NAME_ANDROID_JDK_IMAGE
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
     id("kotlin-parcelize")
+    alias(libs.plugins.google.android.libraries.mapsplatform.secrets.gradle.plugin)
 }
 
 android {
@@ -17,6 +20,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    configurations.all {
+        exclude(mapOf("group" to "com.google.protobuf", "module" to "protobuf-kotlin"))
+        exclude(mapOf("group" to "com.google.protobuf", "module" to "protobuf-kotlin-lite"))
     }
 
     buildTypes {
@@ -41,7 +49,35 @@ android {
     }
 }
 
+
 dependencies {
+    implementation("com.tomtom.sdk.maps:map-display:1.26.3") {
+        exclude(group = "com.google.protobuf", module = "protobuf-java")
+    }
+
+    implementation("com.tomtom.sdk.search:search-online:1.26.3"){
+        exclude(group = "com.google.protobuf", module = "protobuf-java")
+    }
+
+    implementation("com.tomtom.sdk.location:provider-default:1.26.3") {
+        exclude(group = "com.google.protobuf", module = "protobuf-java")
+    }
+
+    implementation("com.tomtom.sdk.location:provider-map-matched:1.26.3") {
+        exclude(group = "com.google.protobuf", module = "protobuf-java")
+    }
+
+    implementation("com.tomtom.sdk.location:provider-simulation:1.26.3") {
+        exclude(group = "com.google.protobuf", module = "protobuf-java")
+    }
+
+    implementation("com.tomtom.sdk.location:provider-api:1.26.3") {
+        exclude(group = "com.google.protobuf", module = "protobuf-java")
+    }
+    implementation("com.google.protobuf:protobuf-javalite:3.25.5")
+    implementation("com.google.android.libraries.places:places:3.4.0")
+    implementation("com.google.android.gms:play-services-maps:18.1.0")
+    implementation("com.google.android.libraries.places:places:3.3.0")
     implementation("androidx.media3:media3-exoplayer:1.4.1")
     implementation("androidx.media3:media3-ui:1.4.1")
     implementation("androidx.palette:palette:1.0.0")
@@ -62,6 +98,7 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.cardview)
     implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.play.services.maps)
 
     // AndroidX & UI
     val fragment_version = "1.8.3"

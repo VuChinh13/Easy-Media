@@ -26,6 +26,7 @@ import com.example.easymedia.ui.component.comment.CommentBottomSheet
 import com.example.easymedia.ui.component.home.adapter.ImagePagerAdapter
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import com.example.easymedia.ui.component.utils.TimeFormatter
+import com.example.easymedia.ui.like.LikeBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -114,13 +115,45 @@ class PostDetailAdapter(
                         post.id,
                         userId,
                         position,
-                        post.counts.comments
-                    ) { pos, newTotalComment ->
-                        reloadTotalComment(pos, newTotalComment)
-                    }
+                        post.counts.comments,
+                        { pos, newTotalComment ->
+                            reloadTotalComment(pos, newTotalComment)
+                        }, null
+                    )
                 commentSheet.show(
                     (holder.itemView.context as AppCompatActivity).supportFragmentManager,
                     "CommentBottomSheet"
+                )
+            }
+
+            // Sự kiện Comment
+            holder.tvTotalComment.setOnClickListener {
+                val commentSheet =
+                    CommentBottomSheet(
+                        post.id,
+                        userId,
+                        position,
+                        post.counts.comments,
+                        { pos, newTotalComment ->
+                            reloadTotalComment(pos, newTotalComment)
+                        }, null
+                    )
+                commentSheet.show(
+                    (holder.itemView.context as AppCompatActivity).supportFragmentManager,
+                    "CommentBottomSheet"
+                )
+            }
+
+            // sự kiện hiển thị những người mà đã like
+            holder.tvTotalLike.setOnClickListener {
+                // thực hiện ở đây
+                val likeSheet =
+                    LikeBottomSheet(
+                        post.id, null
+                    )
+                likeSheet.show(
+                    (holder.itemView.context as AppCompatActivity).supportFragmentManager,
+                    "LikeBottomSheet"
                 )
             }
         }

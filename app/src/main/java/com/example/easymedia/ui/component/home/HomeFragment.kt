@@ -203,7 +203,7 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         }
     }
 
-    fun onAvatarClick2(user: User?) {
+    override fun onAvatarClick2(user: User?) {
         if (user?.id != SharedPrefer.getId()) {
             val profileFragment = ProfileFragment()
             val bundle = Bundle().apply {
@@ -249,6 +249,7 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
 
 interface OnAvatarClickListener {
     fun onAvatarClick(user: User?)
+    fun onAvatarClick2(user: User?)
     fun onStoryClick()
     fun switchScreenStory(listStory: List<Story>)
 }

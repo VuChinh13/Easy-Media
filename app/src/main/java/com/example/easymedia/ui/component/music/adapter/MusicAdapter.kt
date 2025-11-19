@@ -16,7 +16,7 @@ class MusicAdapter(
 ) : RecyclerView.Adapter<MusicAdapter.MusicViewHolder>() {
 
     private var filteredList: MutableList<Music> = originalList.toMutableList()
-    private var selectedPosition: Int = RecyclerView.NO_POSITION  // 👉 vị trí được chọn
+    private var selectedPosition: Int = RecyclerView.NO_POSITION
 
     class MusicViewHolder(val binding: ItemMusicBinding) :
         RecyclerView.ViewHolder(binding.root)
@@ -30,7 +30,6 @@ class MusicAdapter(
 
     override fun onBindViewHolder(holder: MusicViewHolder, position: Int) {
         val music = filteredList[position]
-        val context = holder.itemView.context
 
         holder.binding.tvTitle.text = music.title
         holder.binding.tvArtist.text = music.artist

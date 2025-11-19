@@ -16,6 +16,7 @@ import com.example.easymedia.data.model.Post
 import com.example.easymedia.data.repository.AuthRepositoryImpl
 import com.example.easymedia.data.repository.PostRepositoryImpl
 import com.example.easymedia.databinding.ItemCommentBinding
+import com.example.easymedia.ui.component.home.OnAvatarClickListener
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import com.example.easymedia.ui.component.utils.TimeFormatter
 import com.google.android.material.snackbar.Snackbar
@@ -27,7 +28,9 @@ import kotlinx.coroutines.withContext
 class CommentAdapter(
     private val listComment: MutableList<Comment>,
     private val postId: String,
-    private val onCommentDeleted: () -> Unit
+    private val onCommentDeleted: () -> Unit,
+    private val onDismissCallback: () -> Unit,
+    private val listener: OnAvatarClickListener?
 ) :
     RecyclerView.Adapter<CommentAdapter.CommentViewHolder>() {
     private val repositoryAuth = AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
@@ -104,6 +107,12 @@ class CommentAdapter(
                             cardView.visibility = View.VISIBLE
                             tvComment.visibility = View.VISIBLE
                             tvTime.visibility = View.VISIBLE
+
+                            // sự kiện di chuyển vào bên trong trang cá nhân
+                            itemView.setOnClickListener {
+                                listener?.onAvatarClick(user)
+                                onDismissCallback.invoke()
+                            }
                         }
                 }
             }

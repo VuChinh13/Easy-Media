@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.fragment.app.FragmentContainerView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tomtom="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/map_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:name="com.tomtom.sdk.map.display.ui.MapFragment"
+    tomtom:mapKey="h3ch6HjcPyPGwH2oV1pz7e3m0hlEPr8m"/>

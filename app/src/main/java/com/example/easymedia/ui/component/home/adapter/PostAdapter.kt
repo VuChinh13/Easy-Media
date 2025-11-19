@@ -2,7 +2,6 @@ package com.example.easymedia.ui.component.home.adapter
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,8 +21,6 @@ import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
 import com.example.easymedia.data.data_source.firebase.FirebaseAuthService
 import com.example.easymedia.data.data_source.firebase.FirebasePostService
 import com.example.easymedia.data.model.Post
-import com.example.easymedia.data.model.Story
-import com.example.easymedia.data.model.User
 import com.example.easymedia.data.repository.AuthRepositoryImpl
 import com.example.easymedia.data.repository.PostRepositoryImpl
 import com.example.easymedia.databinding.ItemFirstPostBinding
@@ -32,6 +29,7 @@ import com.example.easymedia.ui.component.comment.CommentBottomSheet
 import com.example.easymedia.ui.component.home.OnAvatarClickListener
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import com.example.easymedia.ui.component.utils.TimeFormatter
+import com.example.easymedia.ui.like.LikeBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -181,13 +179,46 @@ class PostAdapter(
                         post.id,
                         userId,
                         position,
-                        post.counts.comments
-                    ) { pos, newTotalComment ->
-                        reloadTotalComment(pos, newTotalComment)
-                    }
+                        post.counts.comments,
+                        { pos, newTotalComment ->
+                            reloadTotalComment(pos, newTotalComment)
+                        }, listener
+                    )
                 commentSheet.show(
                     (holder.itemView.context as AppCompatActivity).supportFragmentManager,
                     "CommentBottomSheet"
+                )
+            }
+
+            // Sự kiện Comment
+            holder.tvTotalComment.setOnClickListener {
+                val commentSheet =
+                    CommentBottomSheet(
+                        post.id,
+                        userId,
+                        position,
+                        post.counts.comments,
+                        { pos, newTotalComment ->
+                            reloadTotalComment(pos, newTotalComment)
+                        }, listener
+                    )
+                commentSheet.show(
+                    (holder.itemView.context as AppCompatActivity).supportFragmentManager,
+                    "CommentBottomSheet"
+                )
+            }
+
+
+            // sự kiện hiển thị những người mà đã like
+            holder.tvTotalLike.setOnClickListener {
+                // thực hiện ở đây
+                val likeSheet =
+                    LikeBottomSheet(
+                        post.id, listener
+                    )
+                likeSheet.show(
+                    (holder.itemView.context as AppCompatActivity).supportFragmentManager,
+                    "LikeBottomSheet"
                 )
             }
         }

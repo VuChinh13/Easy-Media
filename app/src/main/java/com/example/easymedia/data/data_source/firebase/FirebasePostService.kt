@@ -5,6 +5,7 @@ import com.example.easymedia.data.model.Comment
 import com.example.easymedia.data.model.Like
 import com.example.easymedia.data.model.Location
 import com.example.easymedia.data.model.Post
+import com.example.easymedia.data.model.User
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
@@ -44,6 +45,7 @@ interface PostService {
     suspend fun likePost(postId: String, userId: String)
     suspend fun deletePost(postId: String, userId: String)
     suspend fun unlikePost(postId: String, userId: String)
+    suspend fun getUsersWhoLiked(postId: String): List<User>
     suspend fun hasUserLiked(postId: String, userId: String): Boolean
     suspend fun deleteComment(postId: String, commentId: String)
     suspend fun getComments(postId: String): List<Comment>
@@ -249,6 +251,33 @@ class FirebasePostService(
             )
         }.await()
     }
+
+    override suspend fun getUsersWhoLiked(postId: String): List<User> = coroutineScope {
+        // 1) Lấy danh sách userId từ likes
+        val likeSnapshot = db.collection("posts")
+            .document(postId)
+            .collection("likes")
+            .get()
+            .await()
+
+        val userIds = likeSnapshot.documents.map { it.id }
+
+        // 2) Query từng user theo userId (song song)
+        val tasks = userIds.map { uid ->
+            async {
+                val userSnap = db.collection("users")
+                    .document(uid)
+                    .get()
+                    .await()
+
+                userSnap.toObject(User::class.java)
+            }
+        }
+
+        // 3) Trả về danh sách user (loại null)
+        tasks.awaitAll().filterNotNull()
+    }
+
 
     override suspend fun deletePost(postId: String, userId: String) {
         val postRef = db.collection("posts").document(postId)
