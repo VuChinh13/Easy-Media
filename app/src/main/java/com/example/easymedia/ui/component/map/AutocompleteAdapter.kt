@@ -38,16 +38,22 @@ class AutocompleteAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val result = items[position]
 
-        // Hiển thị gợi ý kết hợp cả 3 loại segment
-        val displayText = result.segments.joinToString(" ") { segment ->
+        // --- CODE ĐỀ XUẤT CẢI TIẾN ---
+        val segmentStrings = result.segments.mapNotNull { segment ->
             when (segment) {
-                is AutocompleteSegmentPlainText -> segment.plainText
-                is AutocompleteSegmentPoiCategory ->
-                    segment.matchedAlternativeName.ifEmpty { segment.poiCategory.name }
-                is AutocompleteSegmentBrand -> segment.brand.name
-                else -> ""
+                is AutocompleteSegmentPlainText -> segment.plainText.ifEmpty { null }
+                is AutocompleteSegmentPoiCategory -> {
+                    // Nếu không có tên khớp thay thế, sử dụng tên danh mục POI
+                    segment.matchedAlternativeName.ifEmpty { segment.poiCategory.name }.ifEmpty { null }
+                }
+                is AutocompleteSegmentBrand -> segment.brand.name.ifEmpty { null }
+                else -> null // Loại bỏ các loại segment không cần thiết hoặc chuỗi rỗng
             }
-        }.ifEmpty { "Unknown" }
+        }
+
+        // Chỉ join các chuỗi không rỗng bằng dấu phẩy và dấu cách
+        val displayText = segmentStrings.joinToString(", ").ifEmpty { "Không có gợi ý" }
+        // --- KẾT THÚC CODE ĐỀ XUẤT CẢI TIẾN ---
 
         holder.tvText.text = displayText
         holder.itemView.setOnClickListener { onClick(result) }

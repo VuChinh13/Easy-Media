@@ -1,6 +1,5 @@
 package com.example.easymedia.ui.component.map
 
-import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -16,17 +15,21 @@ import com.tomtom.sdk.map.display.TomTomMap
 import com.tomtom.sdk.map.display.camera.CameraOptions
 import com.tomtom.sdk.map.display.image.ImageFactory
 import com.tomtom.sdk.map.display.marker.Marker
+import com.tomtom.sdk.map.display.marker.MarkerOptions
 import com.tomtom.sdk.map.display.ui.MapFragment
 import com.tomtom.sdk.map.display.ui.MapReadyCallback
-import com.tomtom.sdk.map.display.marker.MarkerOptions
-import com.tomtom.sdk.search.SearchOptions
 import com.tomtom.sdk.search.SearchCallback
-import com.tomtom.sdk.map.display.image.Image
+import com.tomtom.sdk.search.SearchOptions
 import com.tomtom.sdk.search.SearchResponse
-import com.tomtom.sdk.search.autocomplete.*
+import com.tomtom.sdk.search.autocomplete.AutocompleteCallback
+import com.tomtom.sdk.search.autocomplete.AutocompleteOptions
+import com.tomtom.sdk.search.autocomplete.AutocompleteResponse
 import com.tomtom.sdk.search.common.error.SearchFailure
-import com.tomtom.sdk.search.model.result.*
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentPlainText
+import com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory
 import com.tomtom.sdk.search.online.OnlineSearch
+import java.util.Locale
 
 class MapStoryActivity : AppCompatActivity(), MapReadyCallback {
 
@@ -41,6 +44,10 @@ class MapStoryActivity : AppCompatActivity(), MapReadyCallback {
     private var currentMarker: Marker? = null
 
     private val tag = "mapstory"
+
+    // Thêm biến Handler để xử lý delay tìm kiếm (Debounce)
+    private val searchHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var searchRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,21 +86,45 @@ class MapStoryActivity : AppCompatActivity(), MapReadyCallback {
         ) as OnlineSearch
 
         // EditText listener
+        // SỬA PHẦN TEXT WATCHER
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
             override fun afterTextChanged(s: Editable?) {
-                val text = s.toString()
-                if (text.isNotEmpty()) callAutocomplete(text)
+                // Hủy lệnh tìm kiếm trước đó nếu người dùng vẫn đang gõ
+                searchRunnable?.let { searchHandler.removeCallbacks(it) }
+
+                // Tạo lệnh tìm kiếm mới sau 500ms
+                searchRunnable = Runnable {
+                    val text = s.toString()
+                    if (text.isNotEmpty()) {
+                        callAutocomplete(text)
+                    } else {
+                        // Nếu xóa hết chữ thì clear list gợi ý
+                        adapter.updateData(emptyList())
+                    }
+                }
+                searchHandler.postDelayed(searchRunnable!!, 500) // Delay 500ms
             }
         })
     }
 
+    // --- HÀM QUAN TRỌNG CẦN SỬA ---
     private fun callAutocomplete(text: String) {
+        val currentCenter = if (isMapReady) {
+            tomTomMap.cameraPosition.position
+        } else {
+            GeoPoint(21.028511, 105.804817)
+        }
+
         val options = AutocompleteOptions(
             query = text,
-            position = GeoPoint(21.028511, 105.804817),
-            radius = Distance.meters(500000)
+            position = currentCenter,
+            radius = Distance.meters(20000),
+            locale = Locale("vi", "VN"),
+            // SỬA Ở ĐÂY: Đổi "VN" thành "VNM"
+            countries = setOf("VNM")
         )
 
         searchApi.autocompleteSearch(options, object : AutocompleteCallback {
@@ -102,6 +133,7 @@ class MapStoryActivity : AppCompatActivity(), MapReadyCallback {
             }
 
             override fun onSuccess(result: AutocompleteResponse) {
+                Log.d(tag, "Found ${result.results.size} suggestions")
                 adapter.updateData(result.results)
             }
         })
@@ -109,15 +141,20 @@ class MapStoryActivity : AppCompatActivity(), MapReadyCallback {
 
     private fun searchByText(text: String) {
         if (!isMapReady) {
-            // Map chưa sẵn sàng, lưu pending search
             pendingSearchText = text
             return
         }
         pendingSearchText = null
 
+        val currentCenter = tomTomMap.cameraPosition.position
+
         val options = SearchOptions(
             query = text,
-            geoBias = GeoPoint(21.028511, 105.804817) // trung tâm Hà Nội
+            geoBias = currentCenter,
+            limit = 10,
+            locale = Locale("vi", "VN"),
+            // SỬA Ở ĐÂY: Đổi "VN" thành "VNM"
+            countryCodes = setOf("VNM")
         )
 
         searchApi.search(options, object : SearchCallback {
@@ -126,35 +163,26 @@ class MapStoryActivity : AppCompatActivity(), MapReadyCallback {
             }
 
             override fun onSuccess(result: SearchResponse) {
+                // ... (giữ nguyên logic xử lý marker) ...
                 if (result.results.isNotEmpty()) {
                     val firstResult = result.results[0]
-                    // Lấy vị trí: ưu tiên place.coordinate, fallback poi.position
                     val pos = firstResult.place.coordinate
 
                     if (pos != null) {
-                        // Move camera tới vị trí
                         tomTomMap.moveCamera(CameraOptions(position = pos, zoom = 15.0))
-                        Log.d(tag, "Move camera to: ${pos.latitude}, ${pos.longitude}")
 
-                        // Xoá marker cũ nếu có
-                        currentMarker?.let { tomTomMap.removeMarkers(it.tag) }
+                        // Xóa marker cũ (dùng hàm số nhiều removeMarkers)
+                        tomTomMap.removeMarkers("current_marker")
 
                         val markerImage = ImageFactory.fromResource(R.drawable.ic_location_pin)
 
-                        // Tạo marker đỏ mới
                         val markerOptions = MarkerOptions(
                             coordinate = pos,
-                            pinImage = markerImage, // đây mới là hình marker mặc định đỏ
+                            pinImage = markerImage,
                             tag = "current_marker"
                         )
-
-                        // Thêm marker vào map
                         currentMarker = tomTomMap.addMarker(markerOptions)
-                    } else {
-                        Log.e(tag, "Không lấy được vị trí từ SearchResult")
                     }
-                } else {
-                    Log.e(tag, "SearchResponse không có kết quả")
                 }
             }
         })
