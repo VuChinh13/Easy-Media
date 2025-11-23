@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingBottom="40dp">
@@ -16,12 +17,12 @@
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cardView"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="46dp"
+        android:layout_height="46dp"
         android:layout_marginLeft="15dp"
         android:layout_marginTop="10dp"
         android:elevation="0dp"
-        app:cardCornerRadius="25dp"
+        app:cardCornerRadius="23dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -37,10 +38,10 @@
     <!-- 🌟 Áp shimmer cho avatar -->
     <com.facebook.shimmer.ShimmerFrameLayout
         android:id="@+id/shimmerAvatar"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="46dp"
+        android:layout_height="46dp"
         android:layout_marginLeft="15dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="13dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:shimmer_auto_start="true">
@@ -52,17 +53,45 @@
             android:background="@drawable/bg_circle_placeholder" />
     </com.facebook.shimmer.ShimmerFrameLayout>
 
-    <TextView
-        android:id="@+id/tv_username"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraintLayout"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
-        android:layout_marginTop="15dp"
-        android:textColor="@color/black"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toEndOf="@+id/cardView"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_marginRight="40dp"
+        app:layout_constraintBottom_toTopOf="@id/viewPager"
+        app:layout_constraintLeft_toRightOf="@id/cardView"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/tv_username"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:textColor="@color/black"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@id/tvLocation"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvLocation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="@color/black"
+            android:textSize="13sp"
+            android:textStyle="normal"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="@id/tv_username"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_username" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- 🌟 Áp shimmer cho username -->
     <com.facebook.shimmer.ShimmerFrameLayout
@@ -93,7 +122,7 @@
         android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="400dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="15dp"
         android:background="#DDE1E3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -172,36 +201,36 @@
             app:layout_constraintTop_toTopOf="@+id/iv_comment" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/btn_shared"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="15dp"
-        app:layout_constraintBottom_toBottomOf="@id/btn_comment"
-        app:layout_constraintStart_toEndOf="@id/btn_comment"
-        app:layout_constraintTop_toTopOf="@id/btn_comment">
+    <!--    <androidx.constraintlayout.widget.ConstraintLayout-->
+    <!--        android:id="@+id/btn_shared"-->
+    <!--        android:layout_width="wrap_content"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        android:layout_marginLeft="15dp"-->
+    <!--        app:layout_constraintBottom_toBottomOf="@id/btn_comment"-->
+    <!--        app:layout_constraintStart_toEndOf="@id/btn_comment"-->
+    <!--        app:layout_constraintTop_toTopOf="@id/btn_comment">-->
 
-        <ImageView
-            android:id="@+id/iv_shared"
-            android:layout_width="25dp"
-            android:layout_height="25dp"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_share" />
+    <!--        <ImageView-->
+    <!--            android:id="@+id/iv_shared"-->
+    <!--            android:layout_width="25dp"-->
+    <!--            android:layout_height="25dp"-->
+    <!--            app:layout_constraintLeft_toLeftOf="parent"-->
+    <!--            app:layout_constraintTop_toTopOf="parent"-->
+    <!--            app:srcCompat="@drawable/ic_share" />-->
 
-        <TextView
-            android:id="@+id/tv_total_shared"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="8dp"
-            android:fontFamily="sans-serif-medium"
-            android:text="300"
-            android:textColor="@color/black"
-            android:textSize="15sp"
-            app:layout_constraintBottom_toBottomOf="@+id/iv_shared"
-            app:layout_constraintStart_toEndOf="@+id/iv_shared"
-            app:layout_constraintTop_toTopOf="@+id/iv_shared" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    <!--        <TextView-->
+    <!--            android:id="@+id/tv_total_shared"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_marginLeft="8dp"-->
+    <!--            android:fontFamily="sans-serif-medium"-->
+    <!--            android:text="300"-->
+    <!--            android:textColor="@color/black"-->
+    <!--            android:textSize="15sp"-->
+    <!--            app:layout_constraintBottom_toBottomOf="@+id/iv_shared"-->
+    <!--            app:layout_constraintStart_toEndOf="@+id/iv_shared"-->
+    <!--            app:layout_constraintTop_toTopOf="@+id/iv_shared" />-->
+    <!--    </androidx.constraintlayout.widget.ConstraintLayout>-->
 
     <TextView
         android:id="@+id/tv_content"
@@ -226,32 +255,32 @@
         app:layout_constraintStart_toStartOf="@+id/tv_content"
         app:layout_constraintTop_toBottomOf="@+id/tv_content" />
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/imageView7"
-        android:layout_width="20dp"
-        android:layout_height="30dp"
-        android:layout_marginEnd="10dp"
-        app:layout_constraintBottom_toTopOf="@+id/viewPager"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_menu_post" />
-
-    <TextView
-        android:id="@+id/textView14"
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/tb_menu"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginRight="15dp"
-        android:background="@drawable/bg_button_theo_doi"
-        android:fontFamily="sans-serif-medium"
-        android:paddingLeft="10dp"
-        android:paddingTop="5dp"
-        android:paddingRight="10dp"
-        android:paddingBottom="5dp"
-        android:text="Theo dõi"
-        android:textColor="@color/black"
-        android:textSize="15sp"
-        app:layout_constraintBottom_toBottomOf="@+id/imageView7"
-        app:layout_constraintEnd_toStartOf="@+id/imageView7"
-        app:layout_constraintTop_toTopOf="@+id/imageView7" />
+        android:layout_height="40dp"
+        android:paddingRight="30dp"
+        app:layout_constraintBottom_toTopOf="@id/viewPager"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <!--    <TextView-->
+    <!--        android:id="@+id/textView14"-->
+    <!--        android:layout_width="wrap_content"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        android:layout_marginRight="15dp"-->
+    <!--        android:background="@drawable/bg_button_theo_doi"-->
+    <!--        android:fontFamily="sans-serif-medium"-->
+    <!--        android:paddingLeft="10dp"-->
+    <!--        android:paddingTop="5dp"-->
+    <!--        android:paddingRight="10dp"-->
+    <!--        android:paddingBottom="5dp"-->
+    <!--        android:text="Theo dõi"-->
+    <!--        android:textColor="@color/black"-->
+    <!--        android:textSize="15sp"-->
+    <!--        app:layout_constraintBottom_toBottomOf="@+id/imageView7"-->
+    <!--        app:layout_constraintEnd_toStartOf="@+id/imageView7"-->
+    <!--        app:layout_constraintTop_toTopOf="@+id/imageView7" />-->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

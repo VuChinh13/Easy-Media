@@ -125,7 +125,7 @@ class StoryActivity : AppCompatActivity() {
                 val userId = SharedPrefer.getId()
                 val story = Story(
                     userId = userId, music = musicSelected, durationMs = parseTimeToMillis(
-                        musicSelected?.duration ?: "0:00"
+                        musicSelected?.duration ?: "0:07"
                     )
                 )
                 Toast.makeText(this, "Tin của bạn đang được đăng", Toast.LENGTH_SHORT)

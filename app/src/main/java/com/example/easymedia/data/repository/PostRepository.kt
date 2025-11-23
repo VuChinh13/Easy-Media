@@ -25,7 +25,6 @@ interface PostRepository {
     ): Result<String>
 
     suspend fun getPost(postId: String): Result<Post>
-
     suspend fun getPostsByUser(userId: String): Result<List<Post>>
     suspend fun addComment(postId: String, userId: String, content: String): Result<String>
     suspend fun likePost(postId: String, userId: String): Result<Unit>
@@ -36,6 +35,13 @@ interface PostRepository {
     suspend fun deleteComment(postId: String, commentId: String)
     suspend fun fetchFirstPage(pageSize: Int): Pair<List<Post>, DocumentSnapshot?>
     suspend fun getUsersWhoLiked(postId: String): List<User>
+    suspend fun deletePost(postId: String, userId: String): Result<Unit>
+    suspend fun updatePost(
+        existingPost: Post,
+        removeImageUrls: List<String>,
+        newCaption: String?
+    ): Result<Unit>
+
     suspend fun fetchNextPage(
         pageSize: Int,
         lastDoc: DocumentSnapshot?
@@ -87,6 +93,17 @@ class PostRepositoryImpl(
 
     override suspend fun getUsersWhoLiked(postId: String): List<User> =
         service.getUsersWhoLiked(postId)
+
+    override suspend fun deletePost(postId: String, userId: String) =
+        runCatching { service.deletePost(postId, userId) }
+
+    override suspend fun updatePost(
+        existingPost: Post,
+        removeImageUrls: List<String>,
+        newCaption: String?
+    ) = runCatching {
+        service.updatePost(existingPost, removeImageUrls, newCaption)
+    }
 
     override suspend fun fetchNextPage(
         pageSize: Int,

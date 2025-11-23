@@ -139,4 +139,35 @@ class CloudinaryServiceImpl(
         }
     }
 
+
+    override suspend fun deleteVideo(publicId: String): Boolean = withContext(Dispatchers.IO) {
+        val timestamp = (System.currentTimeMillis() / 1000).toString()
+
+        // Tạo signature: sha1("public_id=$publicId&timestamp=$timestamp$apiSecret")
+        val toSign = "public_id=$publicId&timestamp=$timestamp$apiSecret"
+        val signature = MessageDigest.getInstance("SHA-1")
+            .digest(toSign.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+
+        val form = FormBody.Builder()
+            .add("public_id", publicId)
+            .add("api_key", apiKey)
+            .add("timestamp", timestamp)
+            .add("signature", signature)
+            .build()
+
+        val req = Request.Builder()
+            .url("https://api.cloudinary.com/v1_1/$cloudName/video/destroy")
+            .post(form)
+            .build()
+
+        httpClient.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) error("Cloudinary delete video failed: ${resp.code} ${resp.message}")
+
+            val body = resp.body?.string() ?: return@use false
+            val json = JSONObject(body)
+            // Cloudinary trả {"result":"ok"} khi xoá thành công
+            json.optString("result") == "ok"
+        }
+    }
 }

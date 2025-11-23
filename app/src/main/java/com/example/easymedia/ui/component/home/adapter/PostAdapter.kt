@@ -2,6 +2,7 @@ package com.example.easymedia.ui.component.home.adapter
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -76,6 +77,7 @@ class PostAdapter(
         val cardView = binding.cardView
         val btnComment = binding.btnComment
         val tvTotalComment = binding.tvTotalComment
+        val tvLocation = binding.tvLocation
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -117,6 +119,14 @@ class PostAdapter(
                 tvTotalComment.text = post.counts.comments.toString()
                 tvCreateAt.text = TimeFormatter.getRelativeTime(post.createdAt)
                 tvTotalLike.text = post.counts.likes.toString()
+
+                if (post.location != null) {
+                    tvLocation.visibility = View.VISIBLE
+                    tvLocation.text = post.location!!.address
+                } else {
+                    tvLocation.visibility = View.INVISIBLE
+                    tvLocation.text = ""
+                }
             }
 
             // Hiển thị những thông tin cần thiết lên
@@ -221,6 +231,12 @@ class PostAdapter(
                     "LikeBottomSheet"
                 )
             }
+
+            // sự kiện xem bản đồ
+            holder.tvLocation.setOnClickListener {
+                Log.d("TestLocation", post.location.toString())
+                listener.swithScreenMapDetail(post.location!!, post)
+            }
         }
     }
 
@@ -315,3 +331,7 @@ class PostAdapter(
         }
     }
 }
+
+fun Int.dp(context: Context): Int =
+    (this * context.resources.displayMetrics.density).toInt()
+

@@ -40,11 +40,12 @@ class ImageRenderService(
             // Upload
             CoroutineScope(Dispatchers.IO).launch {
                 val result = storyRepository.uploadStory(story, imageFile, false)
-
-                // Gửi broadcast
-                val intent = Intent("com.example.easymedia.UPLOAD_DONE")
-                intent.putExtra(IntentExtras.RESULT_DATA_STR, true)
-                context.sendBroadcast(intent)
+                if (result) {
+                    // Gửi broadcast
+                    val intent = Intent("com.example.easymedia.UPLOAD_DONE")
+                    intent.putExtra(IntentExtras.RESULT_DATA_STR, true)
+                    context.sendBroadcast(intent)
+                }
             }
         }
     }

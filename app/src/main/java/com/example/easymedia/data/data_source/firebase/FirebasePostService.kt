@@ -1,19 +1,23 @@
 package com.example.easymedia.data.data_source.firebase
 
+import android.util.Log
 import com.example.easymedia.data.data_source.cloudinary.CloudinaryService
 import com.example.easymedia.data.model.Comment
 import com.example.easymedia.data.model.Like
 import com.example.easymedia.data.model.Location
 import com.example.easymedia.data.model.Post
 import com.example.easymedia.data.model.User
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.File
 
@@ -48,6 +52,12 @@ interface PostService {
     suspend fun getUsersWhoLiked(postId: String): List<User>
     suspend fun hasUserLiked(postId: String, userId: String): Boolean
     suspend fun deleteComment(postId: String, commentId: String)
+    suspend fun updatePost(
+        existingPost: Post,
+        removeImageUrls: List<String>,
+        newCaption: String?
+    )
+
     suspend fun getComments(postId: String): List<Comment>
 
     // Tạo post từ file ảnh (upload Cloudinary → lưu Firestore)
@@ -278,33 +288,79 @@ class FirebasePostService(
         tasks.awaitAll().filterNotNull()
     }
 
-
     override suspend fun deletePost(postId: String, userId: String) {
+
+        val tag = "DeletePost"
+
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        Log.d(tag, "🔥 deletePost() CALLED")
+        Log.d(tag, "currentUser = $uid")
+        Log.d(tag, "postId = $postId")
+        Log.d(tag, "postOwner(userId) = $userId")
+
         val postRef = db.collection("posts").document(postId)
         val userRef = db.collection("users").document(userId)
 
         val snapshot = postRef.get().await()
-        val post = snapshot.toObject(Post::class.java) ?: return
+        val post = snapshot.toObject(Post::class.java)
 
-        // Xóa ảnh trên Cloudinary nếu có
+        Log.d(tag, "post exists = ${snapshot.exists()}")
+        Log.d(tag, "post.user_id = ${post?.userId}")
+        Log.d(tag, "isOwner = ${uid == post?.userId}")
+
+        if (post == null) {
+            Log.e(tag, "❌ Post is NULL → STOP")
+            return
+        }
+
+        // Xóa ảnh Cloudinary
+        Log.d(tag, "🖼️ Step1: Deleting Cloudinary images (${post.imagePublicIds.size})")
         if (post.imagePublicIds.isNotEmpty()) {
-            post.imagePublicIds.forEach { cloudinary.deleteImage(it) }
+            coroutineScope {
+                post.imagePublicIds.forEach { publicId ->
+                    launch(Dispatchers.IO) {
+                        try {
+                            Log.d(tag, "→ Deleting Cloudinary image: $publicId")
+                            cloudinary.deleteImage(publicId)
+                            Log.d(tag, "   ✅ Deleted $publicId")
+                        } catch (e: Exception) {
+                            Log.e(tag, "   ❌ Failed: $publicId → ${e.message}")
+                        }
+                    }
+                }
+            }
         }
 
-        // Xóa subcollections (comments + likes)
-        postRef.collection("comments").get().await().documents.forEach {
-            it.reference.delete().await()
-        }
-        postRef.collection("likes").get().await().documents.forEach {
+        // Xóa comments
+        val comments = postRef.collection("comments").get().await().documents
+        Log.d(tag, "💬 Step2: comments = ${comments.size}")
+        comments.forEach {
+            Log.d(tag, "→ delete comment: ${it.id}")
             it.reference.delete().await()
         }
 
-        // Xóa post + giảm post_count
-        db.runBatch { batch ->
-            batch.delete(postRef)
-            batch.update(userRef, "post_count", FieldValue.increment(-1))
-        }.await()
+        // Xóa likes
+        val likes = postRef.collection("likes").get().await().documents
+        Log.d(tag, "❤️ Step2: likes = ${likes.size}")
+        likes.forEach {
+            Log.d(tag, "→ delete like: ${it.id}")
+            it.reference.delete().await()
+        }
+
+        // Batch delete + update
+        Log.d(tag, "🗑️ Step3: Running batch...")
+        try {
+            db.runBatch { batch ->
+                batch.delete(postRef)
+                batch.update(userRef, "post_count", FieldValue.increment(-1))
+            }.await()
+
+            Log.d(tag, "✅ Batch SUCCESS — Post deleted")
+        } catch (e: Exception) {
+            Log.e(tag, "❌ Batch FAILED → ${e.message}")
+        }
     }
+
 
     override suspend fun unlikePost(postId: String, userId: String) {
         val likeDoc = db.collection("posts").document(postId).collection("likes").document(userId)
@@ -346,5 +402,91 @@ class FirebasePostService(
             batch.update(postRef, "counts.comments", FieldValue.increment(-1))
         }.await()
     }
+
+    override suspend fun updatePost(
+        existingPost: Post,
+        removeImageUrls: List<String>,
+        newCaption: String?
+    ) {
+        val tag = "UpdatePost"
+
+        val postRef = db.collection("posts").document(existingPost.id)
+
+        Log.d(tag, "🔥 updatePost() CALLED")
+        Log.d(tag, "existingPost.id = ${existingPost.id}")
+        Log.d(tag, "removeImageUrls = $removeImageUrls")
+        Log.d(tag, "newCaption = $newCaption")
+
+        // ========================
+        // 1️⃣ XỬ LÝ XOÁ ẢNH (NẾU CÓ)
+        // ========================
+
+        // Chuyển URL → publicId (trùng nhau đoạn "posts/xxxxx")
+        val removePublicIds = removeImageUrls.mapNotNull { url ->
+            // URL có dạng .../posts/abc123.jpg
+            val regex = "posts/([a-zA-Z0-9_-]+)".toRegex()
+            val match = regex.find(url)
+            match?.value // kết quả: "posts/abc123"
+        }
+
+        Log.d(tag, "👉 removePublicIds = $removePublicIds")
+
+        // Lọc danh sách mới sau khi loại bỏ ảnh
+        val newImageUrls = existingPost.imageUrls.filterNot { it in removeImageUrls }
+        val newImagePublicIds = existingPost.imagePublicIds.filterNot { pid ->
+            removePublicIds.contains(pid)
+        }
+
+        // Không cho xoá hết ảnh
+        if (newImageUrls.isEmpty()) {
+            Log.e(tag, "❌ Cannot remove all images. Post must have at least ONE image.")
+            return
+        }
+
+        // ========================
+        // 2️⃣ XOÁ ẢNH TRÊN CLOUDINARY
+        // ========================
+        if (removePublicIds.isNotEmpty()) {
+            coroutineScope {
+                removePublicIds.forEach { publicId ->
+                    launch(Dispatchers.IO) {
+                        try {
+                            Log.d(tag, "🗑️ Deleting Cloudinary image: $publicId")
+                            cloudinary.deleteImage(publicId)
+                            Log.d(tag, "   ✅ Deleted $publicId")
+                        } catch (e: Exception) {
+                            Log.e(tag, "   ❌ Failed to delete $publicId → ${e.message}")
+                        }
+                    }
+                }
+            }
+        }
+
+        // ========================
+        // 3️⃣ TẠO POST MỚI SAU KHI CHỈNH SỬA
+        // ========================
+        val updatedPost = existingPost.copy(
+            caption = newCaption ?: existingPost.caption,
+            imageUrls = newImageUrls,
+            imagePublicIds = newImagePublicIds
+        )
+
+        Log.d(tag, "🆕 updatedPost = $updatedPost")
+
+        // ========================
+        // 4️⃣ LƯU LÊN FIRESTORE
+        // ========================
+        try {
+            db.runBatch { batch ->
+                batch.set(postRef, updatedPost)
+                batch.update(postRef, "updated_at", FieldValue.serverTimestamp())
+            }.await()
+
+            Log.d(tag, "✅ Post updated successfully")
+        } catch (e: Exception) {
+            Log.e(tag, "❌ Firestore update FAILED → ${e.message}")
+        }
+    }
+
 
 }

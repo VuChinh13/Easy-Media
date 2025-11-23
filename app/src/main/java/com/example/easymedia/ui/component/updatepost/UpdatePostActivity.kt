@@ -1,81 +1,123 @@
-//package com.example.instagram.ui.component.updatepost
-//
-//import android.content.Context
-//import android.net.Uri
-//import android.os.Bundle
-//import android.widget.Toast
-//import androidx.activity.result.PickVisualMediaRequest
-//import androidx.activity.result.contract.ActivityResultContracts
-//import androidx.activity.viewModels
-//import androidx.appcompat.app.AppCompatActivity
-//import com.bumptech.glide.Glide
-//import com.example.instagram.databinding.ActivityUpdatePostBinding
-//import com.example.instagram.ui.component.utils.IntentExtras
-//import com.example.instagram.ui.component.utils.SharedPrefer
-//import java.io.File
-//import java.io.FileOutputStream
-//
-//class UpdatePostActivity : AppCompatActivity() {
-//    private lateinit var binding: ActivityUpdatePostBinding
-//    private val postImages: MutableList<File> = mutableListOf()
-//    private val updatePostViewModel: UpdatePostViewModel by viewModels()
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        binding = ActivityUpdatePostBinding.inflate(layoutInflater)
-//        setContentView(binding.root)
-//        val images: ArrayList<String> =
-//            intent.getStringArrayListExtra(IntentExtras.EXTRA_POST_IMAGE) ?: arrayListOf()
-//        val content: String = intent.getStringExtra(IntentExtras.EXTRA_POST_CONTENT) ?: ""
-//        val postId: String = intent.getStringExtra(IntentExtras.EXTRA_POST_ID) ?: ""
-//
-//        binding.etContent.append(content)
-//
-//        if (images.isNotEmpty()) {
-//            Glide.with(this).load(images[0]).into(binding.ivPostImage)
-//        }
-//
-//        val pickMultipleMedia =
-//            registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(5)) { uris ->
-//                if (uris.isNotEmpty()) {
-//                    uris.forEach { uri ->
-//                        binding.ivPostImage.setImageURI(uri)
-//                        postImages.add(uriToFile(this, uri))
-//                    }
-//                }
-//            }
-//
-//        binding.btChooseImage.setOnClickListener {
-//            pickMultipleMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-//        }
-//
-//        updatePostViewModel.getPostUpdateResponse.observe(this) { result ->
-//            if (result != null) {
-//                Toast.makeText(this, "Cập nhật bài viết thành công", Toast.LENGTH_SHORT).show()
-//                finish()
-//            } else Toast.makeText(this, "Đã xảy ra lỗi hãy kiểm tra lại", Toast.LENGTH_SHORT).show()
-//        }
-//        binding.btSave.setOnClickListener {
-//           SharedPrefer.updateContext(this)
-//            val userId = SharedPrefer.getUserId()
-//            updatePostViewModel.updatePost(
-//                userId,
-//                postId,
-//                postImages,
-//                binding.etContent.text.toString()
-//            )
-//        }
-//        binding.ivClose.setOnClickListener { finish() }
-//    }
-//
-//    private fun uriToFile(context: Context, uri: Uri): File {
-//        val contentResolver = context.contentResolver
-//        val inputStream = contentResolver.openInputStream(uri)
-//        val fileName = "image_${System.currentTimeMillis()}.jpg"
-//        val file = File(context.cacheDir, fileName)
-//        val outputStream = FileOutputStream(file)
-//        inputStream?.copyTo(outputStream)
-//        inputStream?.close()
-//        outputStream.close()
-//        return file
-//    }
-//}
+package com.example.easymedia.ui.component.updatepost
+
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.example.easymedia.R
+import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
+import com.example.easymedia.data.data_source.firebase.FirebasePostService
+import com.example.easymedia.data.model.Post
+import com.example.easymedia.data.model.User
+import com.example.easymedia.data.repository.PostRepositoryImpl
+import com.example.easymedia.databinding.ActivityUpdatePostBinding
+import com.example.easymedia.ui.component.updatepost.adapter.UpdateProfileImagePagerAdapter
+import com.example.easymedia.ui.component.utils.IntentExtras
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+
+class UpdatePostActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityUpdatePostBinding
+    private val postImages: MutableList<File> = mutableListOf()
+    private val listChanged: MutableList<String> = mutableListOf()
+    private lateinit var adapter: UpdateProfileImagePagerAdapter
+    private val postRepository =
+        PostRepositoryImpl(FirebasePostService(cloudinary = CloudinaryServiceImpl()))
+    private var user: User? = null
+    private var post: Post? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityUpdatePostBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Nhận dữ liệu từ bên màn hình kia truyền sang bên
+        user = intent.getParcelableExtra<User>(IntentExtras.EXTRA_USER)
+        post = intent.getParcelableExtra<Post>(IntentExtras.EXTRA_POST)
+
+        if (user != null && post != null) {
+            adapter = UpdateProfileImagePagerAdapter(
+                post?.imageUrls?.toMutableList() ?: mutableListOf()
+            ) { url ->
+                changeList(url)
+            }
+            binding.viewPager.adapter = adapter
+            binding.tvUsername.text = user!!.username
+            binding.tvTotalLike.text = post!!.counts.likes.toString()
+            binding.tvTotalComment.text = post!!.counts.comments.toString()
+            binding.etContent.setText(post!!.caption)
+            Glide.with(this).load(user?.profilePicture)
+                .error(R.drawable.ic_avatar)
+                .into(binding.ivAvatar)
+            binding.dotsIndicator.attachTo(binding.viewPager)
+
+            // Ẩn chấm nếu chỉ có 1 ảnh (nhiều thư viện tự ẩn ta chủ động luôn)
+            binding.dotsIndicator.visibility =
+                if (post!!.imageUrls.size > 1) View.VISIBLE else View.GONE
+        }
+
+
+        binding.dotsIndicator.attachTo(binding.viewPager)
+
+        // Quan sát khi adapter thay đổi (xóa, thêm ảnh)
+        adapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
+            override fun onChanged() {
+                binding.dotsIndicator.invalidate() // cập nhật lại dots
+            }
+
+            override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
+                binding.dotsIndicator.invalidate()
+            }
+
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                binding.dotsIndicator.invalidate()
+            }
+        })
+
+        binding.ivClose.setOnClickListener { finish() }
+
+        // lưu thay đổi
+        binding.btSave.setOnClickListener {
+            // Kiểm tra xem là có sự thay đổi ko
+            if (checkChange(
+                    post!!,
+                    binding.etContent.text.toString()
+                ) || listChanged.isNotEmpty()
+            ) {
+                binding.loadingOverlay.visibility = View.VISIBLE
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val result = postRepository.updatePost(
+                        post!!,
+                        listChanged,
+                        binding.etContent.text.toString()
+                    )
+                    result.onSuccess {
+                        withContext(Dispatchers.Main) {
+                            binding.loadingOverlay.visibility = View.GONE
+                            val resultIntent = Intent().apply {
+                                putExtra(IntentExtras.RESULT_DATA, true)
+                            }
+                            setResult(RESULT_OK, resultIntent)
+                            finish()
+                        }
+                    }
+                }
+            } else {
+                finish()
+            }
+        }
+    }
+
+    fun changeList(url: String) {
+        listChanged.add(url)
+    }
+
+    fun checkChange(post: Post, caption: String): Boolean {
+        return post.caption != caption
+    }
+}

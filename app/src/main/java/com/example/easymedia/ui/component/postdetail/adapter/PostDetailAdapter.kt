@@ -2,6 +2,7 @@ package com.example.easymedia.ui.component.postdetail.adapter
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,6 +10,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isEmpty
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
@@ -18,6 +20,7 @@ import com.bumptech.glide.request.RequestOptions
 import com.example.easymedia.R
 import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
 import com.example.easymedia.data.data_source.firebase.FirebasePostService
+import com.example.easymedia.data.model.Location
 import com.example.easymedia.data.model.Post
 import com.example.easymedia.data.model.User
 import com.example.easymedia.data.repository.PostRepositoryImpl
@@ -27,6 +30,8 @@ import com.example.easymedia.ui.component.home.adapter.ImagePagerAdapter
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import com.example.easymedia.ui.component.utils.TimeFormatter
 import com.example.easymedia.ui.like.LikeBottomSheet
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -35,8 +40,14 @@ class PostDetailAdapter(
     private val context: Context,
     private var posts: MutableList<Post>,
     private val user: User?,
-    private val scope: LifecycleCoroutineScope
-) : RecyclerView.Adapter<PostDetailAdapter.PostViewHolder>() {
+    private val scope: LifecycleCoroutineScope,
+    private val onClickLocation: (Location, Post) -> Unit,
+    private val change: () -> Unit,
+    private val showLoading: () -> Unit,
+    private val hideLoading: () -> Unit,
+    private val switchScreenUpdatePost: (User, Post) -> Unit,
+
+    ) : RecyclerView.Adapter<PostDetailAdapter.PostViewHolder>() {
     private val postRepository =
         PostRepositoryImpl(FirebasePostService(cloudinary = CloudinaryServiceImpl()))
     private val userId = SharedPrefer.getId()
@@ -61,6 +72,8 @@ class PostDetailAdapter(
         val shimmerAvatar = binding.shimmerAvatar
         val shimmerUser = binding.shimmerUsername
         val cardView = binding.cardView
+        val tvLocation = binding.tvLocation
+        val toolbar = binding.tbMenu
     }
 
     override fun onBindViewHolder(holder: PostViewHolder, position: Int) {
@@ -70,6 +83,11 @@ class PostDetailAdapter(
             viewPager.adapter = ImagePagerAdapter(post.imageUrls)
             dotsIndicator.attachTo(viewPager)
 
+            // Chỉ inflate menu nếu nó chưa được thêm
+            if (toolbar.menu.isEmpty()) {
+                toolbar.inflateMenu(R.menu.menu_item)
+            }
+
             // Ẩn chấm nếu chỉ có 1 ảnh (nhiều thư viện tự ẩn ta chủ động luôn)
             dotsIndicator.visibility =
                 if (post.imageUrls.size > 1) View.VISIBLE else View.GONE
@@ -78,6 +96,14 @@ class PostDetailAdapter(
             tvTotalComment.text = post.counts.comments.toString()
             tvCreateAt.text = TimeFormatter.getRelativeTime(post.createdAt)
             tvTotalLike.text = post.counts.likes.toString()
+
+            if (post.location != null) {
+                tvLocation.visibility = View.VISIBLE
+                tvLocation.text = post.location!!.address
+            } else {
+                tvLocation.visibility = View.INVISIBLE
+                tvLocation.text = ""
+            }
 
             Glide.with(itemView.context)
                 .load(user?.profilePicture)
@@ -156,6 +182,51 @@ class PostDetailAdapter(
                     "LikeBottomSheet"
                 )
             }
+
+            // sự kiện xem bản đồ
+            holder.tvLocation.setOnClickListener {
+                Log.d("TestLocation", post.location.toString())
+                onClickLocation(post.location!!, post)
+            }
+
+            holder.toolbar.setOnMenuItemClickListener { menuItem ->
+                when (menuItem.itemId) {
+                    R.id.menu_delete_post -> {
+                        MaterialAlertDialogBuilder(context, R.style.MyAlertDialogTheme)
+                            .setTitle("Xác nhận")
+                            .setMessage("Bạn có muốn xóa bài viết này không?")
+                            .setPositiveButton("Có") { dialog, _ ->
+                                showLoading()
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    val result = postRepository.deletePost(post.id, userId)
+                                    result.onSuccess {
+                                        change()
+                                        hideLoading()
+                                        posts.removeAt(position)
+                                        notifyItemRemoved(position)
+                                        notifyItemRangeChanged(position, posts.size)
+                                    }
+                                    result.onFailure { e ->
+                                        Log.d("Checkxem", e.message.toString())
+                                    }
+                                }
+                                dialog.dismiss()
+                            }
+                            .setNegativeButton("Không") { dialog, _ ->
+                                dialog.dismiss()
+                            }
+                            .show()
+                        true
+                    }
+
+                    R.id.menu_edit_post -> {
+                        switchScreenUpdatePost(user ?: User(), post)
+                        true
+                    }
+
+                    else -> false
+                }
+            }
         }
     }
 
@@ -202,6 +273,7 @@ class PostDetailAdapter(
 
     @SuppressLint("NotifyDataSetChanged")
     fun addPosts(newPosts: List<Post>) {
+        posts.clear()
         posts.addAll(newPosts)
         notifyDataSetChanged()
     }

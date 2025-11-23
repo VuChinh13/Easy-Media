@@ -1,8 +1,6 @@
 package com.example.easymedia.ui.component.myprofile.adapter
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -10,12 +8,10 @@ import com.bumptech.glide.Glide
 import com.example.easymedia.data.model.Post
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.ItemMyPostBinding
-import com.example.easymedia.ui.component.postdetail.PostDetailActivity
-import com.example.easymedia.ui.component.utils.IntentExtras
 
 class MyPostAdapter(
-    private val context: Context,
-    private val posts: MutableList<Post>
+    private val posts: MutableList<Post>,
+    private val switchScreen: (User, Int) -> Unit
 ) :
     RecyclerView.Adapter<MyPostAdapter.PostViewHolder>() {
     private var user: User? = null
@@ -36,11 +32,7 @@ class MyPostAdapter(
             .into(holder.imageView)
         holder.apply {
             imageView.setOnClickListener {
-                // truyền dữ liệu từ màn này sang bên màn bài viết
-                val intent = Intent(context, PostDetailActivity::class.java)
-                intent.putExtra(IntentExtras.EXTRA_USER, user)
-                intent.putExtra(IntentExtras.EXTRA_POSITION, position)
-                context.startActivity(intent)
+                switchScreen(user!!, position)
             }
         }
     }
@@ -50,7 +42,8 @@ class MyPostAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    fun updateListPost(posts: List<Post>){
+    fun updateListPost(posts: List<Post>) {
+        this.posts.clear()
         this.posts.addAll(posts)
         notifyDataSetChanged()
     }

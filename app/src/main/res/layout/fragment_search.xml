@@ -5,6 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
+    android:clickable="true"
+    android:focusable="true"
     android:padding="10dp"
     tools:context=".ui.component.search.SearchFragment">
 
@@ -53,11 +55,11 @@
         android:layout_marginRight="10dp"
         android:background="@drawable/bg_search_view"
         android:completionThreshold="1"
+        android:dropDownHorizontalOffset="-10dp"
         android:hint="Nhập tên người dùng"
         android:imeOptions="actionDone"
         android:inputType="textPersonName"
         android:paddingLeft="10dp"
-        android:dropDownHorizontalOffset="-10dp"
         android:popupBackground="@drawable/bg_dropdown_custom"
         android:textSize="15sp"
         app:layout_constraintLeft_toLeftOf="parent"

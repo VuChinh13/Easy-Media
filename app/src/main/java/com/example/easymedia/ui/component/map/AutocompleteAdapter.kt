@@ -1,6 +1,6 @@
+// file: AutocompleteAdapter.kt
 package com.example.easymedia.ui.component.map
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,17 +8,14 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.easymedia.R
 import com.tomtom.sdk.search.model.result.AutocompleteResult
-import com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand
-import com.tomtom.sdk.search.model.result.AutocompleteSegmentPlainText
-import com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory
+
 
 class AutocompleteAdapter(
-    private var items: List<AutocompleteResult> = emptyList(),
-    private val onClick: (AutocompleteResult) -> Unit
+    private var items: List<DisplayItem> = emptyList(),
+    private val onClick: (DisplayItem) -> Unit
 ) : RecyclerView.Adapter<AutocompleteAdapter.ViewHolder>() {
 
-    @SuppressLint("NotifyDataSetChanged")
-    fun updateData(newItems: List<AutocompleteResult>) {
+    fun updateData(newItems: List<DisplayItem>) {
         items = newItems
         notifyDataSetChanged()
     }
@@ -36,27 +33,25 @@ class AutocompleteAdapter(
     override fun getItemCount(): Int = items.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val result = items[position]
+        val item = items[position]
 
-        val segmentStrings = result.segments.mapNotNull { segment ->
-            when (segment) {
-                is AutocompleteSegmentPlainText -> segment.plainText.ifEmpty { null }
-                is AutocompleteSegmentPoiCategory -> {
-                    // Nếu không có tên khớp thay thế, sử dụng tên danh mục POI
-                    segment.matchedAlternativeName.ifEmpty { segment.poiCategory.name }
-                        .ifEmpty { null }
+        val displayText = when(item) {
+            is DisplayItem.History -> item.item.address
+            is DisplayItem.Suggestion -> {
+                // Build queryText từ segments
+                val segments = item.result.segments.mapNotNull { segment ->
+                    when(segment) {
+                        is com.tomtom.sdk.search.model.result.AutocompleteSegmentPlainText -> segment.plainText.trim().takeIf { it.isNotEmpty() }
+                        is com.tomtom.sdk.search.model.result.AutocompleteSegmentPoiCategory -> (segment.matchedAlternativeName.ifEmpty { segment.poiCategory.name }).trim().takeIf { it.isNotEmpty() }
+                        is com.tomtom.sdk.search.model.result.AutocompleteSegmentBrand -> segment.brand.name.trim().takeIf { it.isNotEmpty() }
+                        else -> null
+                    }
                 }
-
-                is AutocompleteSegmentBrand -> segment.brand.name.ifEmpty { null }
-                else -> null // Loại bỏ các loại segment không cần thiết hoặc chuỗi rỗng
+                segments.joinToString(", ").ifEmpty { item.result.toString() }
             }
         }
 
-        // Chỉ join các chuỗi không rỗng bằng dấu phẩy và dấu cách
-        val displayText = segmentStrings.joinToString(", ").ifEmpty { "Không có gợi ý" }
-        // --- KẾT THÚC CODE ĐỀ XUẤT CẢI TIẾN ---
-
         holder.tvText.text = displayText
-        holder.itemView.setOnClickListener { onClick(result) }
+        holder.itemView.setOnClickListener { onClick(item) }
     }
 }

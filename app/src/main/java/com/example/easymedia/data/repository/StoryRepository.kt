@@ -9,6 +9,7 @@ interface StoryRepository {
     suspend fun getAllMusics(): List<Music>
     suspend fun uploadStory(story: Story, imageFile: File, isVideo: Boolean): Boolean
     suspend fun getAllStories(): List<Story>
+    suspend fun deleteStory(storyId: String): Boolean
 }
 
 class StoryRepositoryImpl(private val service: StoryService) : StoryRepository {
@@ -26,5 +27,9 @@ class StoryRepositoryImpl(private val service: StoryService) : StoryRepository {
 
     override suspend fun getAllStories(): List<Story> {
         return service.getAllStories()
+    }
+
+    override suspend fun deleteStory(storyId: String): Boolean {
+        return service.deleteStory(storyId)
     }
 }

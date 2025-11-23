@@ -22,6 +22,8 @@ import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.easymedia.R
+import com.example.easymedia.data.model.Location
+import com.example.easymedia.data.model.Post
 import com.example.easymedia.data.model.Story
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.FragmentHomeBinding
@@ -29,6 +31,7 @@ import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation
 import com.example.easymedia.ui.component.home.adapter.PostAdapter
 import com.example.easymedia.ui.component.home.adapter.StoryAdapter
 import com.example.easymedia.ui.component.main.MainActivity
+import com.example.easymedia.ui.component.mapdetail.MapDetailActivity
 import com.example.easymedia.ui.component.profile.ProfileFragment
 import com.example.easymedia.ui.component.story.StoryActivity
 import com.example.easymedia.ui.component.utils.IntentExtras
@@ -64,10 +67,19 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
     val launcherStory = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result: ActivityResult ->
+
+
         if (result.resultCode == RESULT_OK) {
             val data = result.data
             val user = data?.getParcelableExtra<User>(IntentExtras.EXTRA_USER)
-            onAvatarClick2(user)
+            if (user != null) {
+                onAvatarClick2(user)
+            }
+
+            val result = data?.getBooleanExtra(IntentExtras.RESULT_DATA, false)
+            if (result == true) {
+                homeViewModel.getAllStories()
+            }
         }
     }
 
@@ -231,6 +243,16 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         launcherStory.launch(intent)
     }
 
+    override fun swithScreenMapDetail(location: Location, post: Post) {
+        val intent =
+            Intent(requireContext(), MapDetailActivity::class.java)
+        intent.putExtra("lat", location.latitude)
+        intent.putExtra("lng", location.longitude)
+        intent.putExtra("name", location.address)
+        intent.putExtra(IntentExtras.EXTRA_USER, post)
+        startActivity(intent)
+    }
+
     override fun onStart() {
         super.onStart()
         ContextCompat.registerReceiver(
@@ -252,6 +274,7 @@ interface OnAvatarClickListener {
     fun onAvatarClick2(user: User?)
     fun onStoryClick()
     fun switchScreenStory(listStory: List<Story>)
+    fun swithScreenMapDetail(location: Location, post: Post)
 }
 
 

@@ -21,4 +21,41 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">10dp</item>
     </style>
+
+    <style name="MyAlertDialogTheme" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="materialAlertDialogBodyTextStyle">@style/MyDialogTextStyle</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/MyDialogTitleStyle</item>
+        <item name="buttonBarPositiveButtonStyle">@style/MyDialogButtonStyle</item>
+        <item name="buttonBarNegativeButtonStyle">@style/MyDialogButtonStyle</item>
+    </style>
+
+    <style name="MyDialogButtonStyle" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">#000000</item> <!-- màu đen -->
+    </style>
+
+    <style name="MyDialogTextStyle" parent="MaterialAlertDialog.Material3.Body.Text">
+        <item name="android:textColor">#000000</item>
+    </style>
+
+    <style name="MyDialogTitleStyle" parent="MaterialAlertDialog.Material3.Title.Text">
+        <item name="android:textColor">#000000</item>
+    </style>
+
+
+    <!-- Text style cho menu item -->
+    <style name="CustomPopupMenuText" parent="TextAppearance.AppCompat.Body1">
+        <item name="android:textSize">14sp</item> <!-- giảm text size -->
+        <item name="android:paddingStart">0dp</item> <!-- giảm padding trái -->
+        <item name="android:paddingEnd">0dp</item> <!-- giảm padding phải -->
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:paddingBottom">0dp</item>
+    </style>
+
+    <!-- Theme overlay cho PopupMenu -->
+    <style name="AppTheme.PopupMenu" parent="ThemeOverlay.AppCompat.Light">
+        <item name="android:itemTextAppearance">@style/CustomPopupMenuText</item>
+        <item name="android:popupBackground">@android:color/white</item>
+    </style>
+
+
 </resources>

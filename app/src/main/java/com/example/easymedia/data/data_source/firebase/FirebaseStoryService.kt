@@ -33,6 +33,8 @@ interface StoryService {
      * @return List<Story>
      */
     suspend fun getAllStories(): List<Story>
+
+    suspend fun deleteStory(storyId: String): Boolean
 }
 
 class FirebaseStoryService(
@@ -156,4 +158,71 @@ class FirebaseStoryService(
             }
         }
     }
+
+    override suspend fun deleteStory(storyId: String): Boolean {
+        val tag = "DeleteStory"
+        return try {
+            Log.d(tag, "🔥 deleteStory() CALLED with id = $storyId")
+
+            val docRef = db.collection("stories").document(storyId)
+            val snapshot = docRef.get().await()
+
+            if (!snapshot.exists()) {
+                Log.e(tag, "❌ Story not found")
+                return false
+            }
+
+            val imageUrl = snapshot.getString("image_url") ?: ""
+            Log.d(tag, "👉 Story imageUrl = $imageUrl")
+
+            if (imageUrl.isEmpty()) {
+                Log.e(tag, "❌ Story has no imageUrl → Cannot delete Cloudinary")
+            } else {
+                // 1️⃣ TÁCH PUBLIC ID
+                val publicId = extractPublicId(imageUrl)
+                Log.d(tag, "👉 Extracted publicId = $publicId")
+
+                if (publicId != null) {
+                    // 2️⃣ KIỂM TRA LÀ VIDEO HAY ẢNH
+                    val isVideo = isVideoUrl(imageUrl)
+
+                    if (isVideo) {
+                        Log.d(tag, "🎬 Detected VIDEO → Deleting Cloudinary video")
+                        cloudinary.deleteVideo(publicId)
+                    } else {
+                        Log.d(tag, "🖼 Detected IMAGE → Deleting Cloudinary image")
+                        cloudinary.deleteImage(publicId)
+                    }
+                } else {
+                    Log.e(tag, "❌ Failed to extract publicId → Skip Cloudinary delete")
+                }
+            }
+
+            // 3️⃣ XOÁ FIRESTORE DOCUMENT
+            docRef.delete().await()
+            Log.d(tag, "✅ Story deleted successfully")
+
+            true
+        } catch (e: Exception) {
+            Log.e(tag, "❌ Failed to delete story → ${e.message}", e)
+            false
+        }
+    }
+
+    private fun extractPublicId(url: String): String? {
+        // URL dạng: .../stories/abcd1234.jpg
+        val regex = "stories/([a-zA-Z0-9_-]+)".toRegex()
+        val match = regex.find(url)
+        return match?.value // stories/abcd1234
+    }
+
+
+    private fun isVideoUrl(url: String): Boolean {
+        val lower = url.lowercase()
+        return lower.endsWith(".mp4") ||
+                lower.endsWith(".mov") ||
+                lower.endsWith(".mkv") ||
+                lower.endsWith(".avi")
+    }
+
 }

@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Color
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
@@ -14,19 +15,28 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.bumptech.glide.Glide
 import com.example.easymedia.R
+import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
+import com.example.easymedia.data.data_source.firebase.FirebaseStoryService
 import com.example.easymedia.data.model.Music
 import com.example.easymedia.data.model.Story
+import com.example.easymedia.data.repository.StoryRepositoryImpl
 import com.example.easymedia.databinding.ActivityViewStoryBinding
 import com.example.easymedia.ui.component.utils.IntentExtras
+import com.example.easymedia.ui.component.utils.SharedPrefer
 import com.example.easymedia.ui.component.utils.TimeFormatter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ViewStoryActivity : AppCompatActivity() {
     private val viewStoryViewModel: ViewStoryViewModel by viewModels()
@@ -34,6 +44,8 @@ class ViewStoryActivity : AppCompatActivity() {
     private var exoPlayer: ExoPlayer? = null
     private var listStory: List<Story> = emptyList()
     private val durations = mutableListOf<Long>()
+    private val repository =
+        StoryRepositoryImpl(FirebaseStoryService(cloudinary = CloudinaryServiceImpl()))
 
     // progress views
     private val progressBgs = mutableListOf<View>()
@@ -48,6 +60,7 @@ class ViewStoryActivity : AppCompatActivity() {
 
     // media
     private var mediaPlayer: MediaPlayer? = null
+    private val userId = SharedPrefer.getId()
 
     // index hiện tại (story đang hiển thị)
     private var counter = 0
@@ -77,6 +90,50 @@ class ViewStoryActivity : AppCompatActivity() {
         }
 
         initPlayer()
+
+        // Kiểm tra xem liệu là có phải là Story của mình không nếu mà là Story của mình thì mới là có thể mà là xóa được á
+        if (userId == listStory[0].userId) {
+            binding.tbMenu.visibility = View.VISIBLE
+            binding.tbMenu.inflateMenu(R.menu.menu_item_story)
+            binding.tbMenu.overflowIcon?.setTint(Color.WHITE)
+        }
+
+        //Sự kiện xóa tym
+        binding.tbMenu.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.menu_delete_story -> {
+                    // Xử lý xóa story
+                    releaseMediaPlayer()
+                    clearAnimator()
+                    exoPlayer?.release()
+                    exoPlayer = null
+
+                    binding.loadingOverlay.visibility = View.VISIBLE
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val result = repository.deleteStory(listStory[counter].id)
+                        if (result) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    this@ViewStoryActivity,
+                                    "Đã xóa tin của bạn",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                val resultIntent = Intent().apply {
+                                    putExtra(IntentExtras.RESULT_DATA, true)
+                                }
+                                setResult(RESULT_OK, resultIntent)
+                                finish()
+                            }
+                        }
+                    }
+                    true
+                }
+
+                else -> false
+            }
+        }
+
 
         // load thông tin user (ví dụ hiển thị avatar/username)
         viewStoryViewModel.getInforUser(listStory[0].userId)
@@ -519,31 +576,6 @@ class ViewStoryActivity : AppCompatActivity() {
         exoPlayer?.release()
         exoPlayer = null
         super.onDestroy()
-    }
-
-    // ----- utility -----
-    private fun parseDurationToMillis(durationStr: String): Long {
-        if (durationStr.isBlank()) return 5000L // fallback mặc định 5s
-
-        return try {
-            val parts = durationStr.split(":")
-            when (parts.size) {
-                2 -> {
-                    val minutes = parts[0].toLongOrNull() ?: 0L
-                    val seconds = parts[1].toLongOrNull() ?: 0L
-                    (minutes * 60 + seconds) * 1000
-                }
-
-                1 -> {
-                    val seconds = parts[0].toLongOrNull() ?: 0L
-                    seconds * 1000
-                }
-
-                else -> 5000L
-            }
-        } catch (e: Exception) {
-            5000L
-        }
     }
 
     // extension dp

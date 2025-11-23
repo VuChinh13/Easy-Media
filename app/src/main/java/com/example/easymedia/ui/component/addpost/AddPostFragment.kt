@@ -1,5 +1,6 @@
 package com.example.easymedia.ui.component.addpost
 
+import android.app.Activity.RESULT_OK
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -9,14 +10,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import com.example.easymedia.data.model.Location
 import com.example.easymedia.databinding.FragmentAddPostBinding
 import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.map.MapStoryActivity
+import com.example.easymedia.ui.component.utils.IntentExtras
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import java.io.File
 import java.io.FileOutputStream
@@ -25,6 +29,22 @@ class AddPostFragment : Fragment() {
     private val postImages: MutableList<File> = mutableListOf()
     private val addPostViewModel: AddPostViewModel by viewModels()
     private lateinit var binding: FragmentAddPostBinding
+    private var location: Location? = null
+    private val launcher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result: ActivityResult ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data
+            val location = data?.getParcelableExtra<Location>(IntentExtras.RESULT_DATA)
+            this.location = location
+            // khi mà nhận được thì hiển thị vị trí
+            if (location != null) {
+                binding.icLocation.visibility = View.VISIBLE
+                binding.tvLocation.text = location.address
+                binding.tvLocation.visibility = View.VISIBLE
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -60,7 +80,7 @@ class AddPostFragment : Fragment() {
 
         binding.btnLocation.setOnClickListener {
             val intent = Intent(requireContext(), MapStoryActivity::class.java)
-            startActivity(intent)
+            launcher.launch(intent)
         }
 
         addPostViewModel.result.observe(viewLifecycleOwner) { result ->
@@ -76,7 +96,11 @@ class AddPostFragment : Fragment() {
                     "request_post_added",
                     bundleOf("isAdded" to true)
                 )
-                (activity as MainActivity).clearBackStackExceptFirst()
+                (parentFragmentManager.beginTransaction()
+                    .remove(this)
+                    .commit())
+                (parentFragmentManager.popBackStackImmediate())
+
             } else {
                 (activity as MainActivity).hideLoading()
                 Toast.makeText(
@@ -85,7 +109,10 @@ class AddPostFragment : Fragment() {
                     Toast.LENGTH_SHORT
                 )
                     .show()
-                (activity as MainActivity).clearBackStackExceptFirst()
+                (parentFragmentManager.beginTransaction()
+                    .remove(this)
+                    .commit())
+                (parentFragmentManager.popBackStackImmediate())
             }
         }
 
@@ -103,7 +130,7 @@ class AddPostFragment : Fragment() {
                 addPostViewModel.createPost(
                     userId,
                     binding.etContent.text.toString(),
-                    null,
+                    location,
                     postImages
                 )
             }

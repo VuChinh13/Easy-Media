@@ -1,11 +1,14 @@
 package com.example.easymedia.ui.component.myprofile
 
+import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -22,6 +25,7 @@ import androidx.core.content.edit
 import com.example.easymedia.data.model.Post
 import com.example.easymedia.ui.component.addpost.AddPostFragment
 import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation.setSlideAnimations
+import com.example.easymedia.ui.component.postdetail.PostDetailActivity
 import com.example.easymedia.ui.component.search.SearchFragment
 import com.example.easymedia.ui.component.updateinformation.UpdateInformationFragment
 import com.example.easymedia.ui.component.utils.IntentExtras
@@ -32,6 +36,21 @@ class MyProfileFragment : Fragment() {
     private var inforUserResponse: User? = null
     private lateinit var myPostAdapter: MyPostAdapter
     private var listPost = mutableListOf<Post>()
+    private val uid = SharedPrefer.getId()
+
+    private val launcher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result: ActivityResult ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data
+            val isSucceeds = data?.getBooleanExtra(IntentExtras.RESULT_DATA, false)
+            if (isSucceeds == true) {
+                // true có nghĩa là cập nhật cần load lại
+                myProfileViewModel.getInforUser(uid)
+                myProfileViewModel.getUserPosts(uid)
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -49,11 +68,12 @@ class MyProfileFragment : Fragment() {
         (activity as MainActivity).showLoading()
 
         SharedPrefer.updateContext(requireContext())
-        val uid = SharedPrefer.getId()
         myProfileViewModel.getInforUser(uid)
         myProfileViewModel.getUserPosts(uid)
         myPostAdapter =
-            MyPostAdapter(requireActivity(), mutableListOf())
+            MyPostAdapter(mutableListOf()) { user, position ->
+                switchScreen(user, position)
+            }
 
 
         // Chuyển sang chỉnh sửa Profile
@@ -85,6 +105,7 @@ class MyProfileFragment : Fragment() {
             // ẩn
             (activity as MainActivity).hideBottomBar()
         }
+
 
         myProfileViewModel.getUserPostsResult.observe(viewLifecycleOwner) { result ->
             if (result.isEmpty()) {
@@ -157,7 +178,8 @@ class MyProfileFragment : Fragment() {
         // Taọ bài viết khi mà chưa có bài viết nảo cả
         binding.btnCreatePost.setOnClickListener {
             val searchFragment = AddPostFragment()
-            val transactionMyProfileFragment = requireActivity().supportFragmentManager.beginTransaction()
+            val transactionMyProfileFragment =
+                requireActivity().supportFragmentManager.beginTransaction()
             transactionMyProfileFragment.setSlideAnimations()
             transactionMyProfileFragment.add(R.id.fragment, searchFragment)
             transactionMyProfileFragment.addToBackStack(null)
@@ -167,6 +189,13 @@ class MyProfileFragment : Fragment() {
         requireActivity()
             .onBackPressedDispatcher
             .addCallback(viewLifecycleOwner, callback)
+    }
+
+    fun switchScreen(user: User, position: Int) {
+        val intent = Intent(context, PostDetailActivity::class.java)
+        intent.putExtra(IntentExtras.EXTRA_USER, user)
+        intent.putExtra(IntentExtras.EXTRA_POSITION, position)
+        launcher.launch(intent)
     }
 
 //    override fun onResume() {

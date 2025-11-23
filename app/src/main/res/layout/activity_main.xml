@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
+    android:fitsSystemWindows="true"
     tools:context=".ui.component.main.MainActivity">
 
     <androidx.fragment.app.FragmentContainerView
@@ -87,10 +88,10 @@
         android:clickable="true"
         android:focusable="true"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="@id/fragment"
         app:layout_constraintBottom_toBottomOf="@id/fragment"
+        app:layout_constraintEnd_toEndOf="@id/fragment"
         app:layout_constraintStart_toStartOf="@id/fragment"
-        app:layout_constraintEnd_toEndOf="@id/fragment">
+        app:layout_constraintTop_toTopOf="@id/fragment">
 
         <ProgressBar
             android:id="@+id/progressBar"

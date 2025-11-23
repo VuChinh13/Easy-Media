@@ -12,9 +12,12 @@ interface CloudinaryService {
         imageFile: File,
         folder: String = "posts" // mặc định dùng folder 'posts'
     ): CloudinaryUploadResult
+
     suspend fun deleteImage(publicId: String): Boolean
     suspend fun uploadVideo(
         videoFile: File,
         folder: String
     ): CloudinaryUploadResult
+
+    suspend fun deleteVideo(publicId: String): Boolean
 }
