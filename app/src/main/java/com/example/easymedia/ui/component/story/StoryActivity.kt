@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import kotlin.math.min
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
@@ -18,15 +19,19 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.ResourcesCompat
@@ -35,7 +40,11 @@ import androidx.core.graphics.toColorInt
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ClippingMediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.palette.graphics.Palette
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
@@ -57,6 +66,7 @@ import gun0912.tedimagepicker.builder.TedImagePicker
 import gun0912.tedimagepicker.builder.type.MediaType
 import java.io.File
 import java.io.FileOutputStream
+import androidx.core.view.isVisible
 
 class StoryActivity : AppCompatActivity() {
     private lateinit var player: ExoPlayer
@@ -64,6 +74,7 @@ class StoryActivity : AppCompatActivity() {
     private val overlayInfo = TextOverlayInfo()
     private val overlayInfoMusic = TextOverlayInfo()
     private var success = false
+    private var musicActualDurationMs: Long = 0L
     private lateinit var binding: ActivityStoryBinding
     private lateinit var musicPlayer: ExoPlayer   // Player riêng cho nhạc nền (optional)
     private var videoEditState = VideoEditState() // trạng thái mặc định
@@ -78,14 +89,15 @@ class StoryActivity : AppCompatActivity() {
     private var isSelectedImage = true // mặc định là chọn ảnh đe
     private var textStyleSelected = "lato"
     private var musicSelected: Music? = null
+    private var isMusicClipped = false
     private var originalX = 0f
     private var originalY = 0f
     private var originalMusicX = 0f
     private var originalMusicY = 0f
     private lateinit var shakeAnim: Animation
-    private val bottomSheet = MusicBottomSheet { music ->
+    private val bottomSheet = MusicBottomSheet({ music ->
         finishChooseMusic(music)
-    }
+    }, { muteVideo() })
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -148,9 +160,6 @@ class StoryActivity : AppCompatActivity() {
                     musicPlayer.release()
                 }
 
-                val userId = SharedPrefer.getId()
-                val story = Story(userId = userId, music = musicSelected)
-
                 // đảm bảo view đã layout
                 binding.blockImage.post {
                     try {
@@ -158,7 +167,8 @@ class StoryActivity : AppCompatActivity() {
                         val overlayBitmap = createOverlayWithHole(
                             binding.blockImage,
                             binding.videoTexture,
-                            binding.etEditableText
+                            binding.etEditableText,
+                            binding.blockMusic
                         )
                         val overlayFile = saveOverlayBitmapToFile(
                             this,
@@ -185,6 +195,10 @@ class StoryActivity : AppCompatActivity() {
                         val durationMs = durStr?.toLongOrNull() ?: 0L
                         retriever.release()
 
+                        val userId = SharedPrefer.getId()
+                        val story =
+                            Story(userId = userId, music = musicSelected, durationMs = durationMs)
+
                         // 4) start service
                         val intent = Intent(this, VideoRenderService::class.java).apply {
                             putExtra(IntentExtras.EXTRA_VIDEO_URI, selectedUri)
@@ -200,6 +214,10 @@ class StoryActivity : AppCompatActivity() {
                             putExtra(IntentExtras.EXTRA_TH, th)
                             putExtra(IntentExtras.EXTRA_DURATION_MS, durationMs)
                             putExtra(IntentExtras.EXTRA_STORY, story)
+                            putExtra(IntentExtras.EXTRA_MUTED, isMuted)
+                            putExtra(IntentExtras.EXTRA_MUSIC, musicSelected?.url)
+                            putExtra(IntentExtras.EXTRA_DURATION_MUSIC, musicActualDurationMs)
+                            putExtra(IntentExtras.EXTRA_MUSIC_CLIPPED, isMusicClipped)
                         }
 
                         // 🔹 1. Kiểm tra và xin quyền thông báo (Android 13+)
@@ -412,7 +430,7 @@ class StoryActivity : AppCompatActivity() {
             changeBackgroundText(textStyleSelected)
         }
 
-        // sự kiện chọn màu
+        // sự kiện chọn màua
         binding.btnTextTiltNeon.setOnClickListener {
             changeBackgroundText2(textStyleSelected)
             textStyleSelected = "tiltneon"
@@ -535,7 +553,7 @@ class StoryActivity : AppCompatActivity() {
         // 2️⃣ Khởi tạo ExoPlayer
         player = ExoPlayer.Builder(this).build()
         player.setMediaItem(MediaItem.fromUri(uri))
-        player.repeatMode = Player.REPEAT_MODE_ONE
+        player.repeatMode = Player.REPEAT_MODE_OFF // tắt loop mặc định
         player.playWhenReady = true
 
         // 3️⃣ Gắn TextureView
@@ -550,14 +568,37 @@ class StoryActivity : AppCompatActivity() {
             }
 
             override fun onRenderedFirstFrame() {
-                // Sound mặc định ON
-                player.volume = 1f
-                isMuted = false
-                binding.btnSound.setImageResource(R.drawable.ic_sound)
+                // Thiết lập âm thanh theo trạng thái isMuted hiện tại
+                player.volume = if (isMuted) 0f else 1f
+                binding.btnSound.setImageResource(
+                    if (isMuted) R.drawable.ic_sound_off else R.drawable.ic_sound
+                )
             }
         })
 
         player.prepare()
+
+        // ⭐ Loop video theo logic 60 giây + check isMuted ⭐
+        val maxLoopDurationMs = 60_000L
+        val handler = Handler(Looper.getMainLooper())
+
+        val loopRunnable = object : Runnable {
+            override fun run() {
+                val currentPos = player.currentPosition
+                val loopDuration =
+                    min(maxLoopDurationMs, player.duration) // video ngắn <60s thì loop toàn bộ
+
+                if (currentPos >= loopDuration) {
+                    player.seekTo(0)
+                    player.playWhenReady = true
+                    player.volume = if (isMuted) 0f else 1f
+                }
+
+                handler.postDelayed(this, 50)
+            }
+        }
+
+        handler.post(loopRunnable)
     }
 
     /** Bật / tắt âm thanh video **/
@@ -570,6 +611,18 @@ class StoryActivity : AppCompatActivity() {
         videoEditState = videoEditState.copy(removeOriginalAudio = isMuted)
         Log.d("StoryActivity", "Âm thanh: ${if (isMuted) "TẮT" else "BẬT"}")
     }
+
+    /** Chỉ tắt âm thanh video **/
+    private fun muteVideo() {
+        isMuted = true
+        if (::player.isInitialized) {
+            player.volume = 0f
+        }
+        binding.btnSound.setImageResource(R.drawable.ic_sound_off)
+        videoEditState = videoEditState.copy(removeOriginalAudio = true)
+        Log.d("StoryActivity", "Video đã bị tắt âm")
+    }
+
 
     @SuppressLint("ServiceCast")
     private fun hideAddText() {
@@ -601,6 +654,9 @@ class StoryActivity : AppCompatActivity() {
     private fun finishAddText() {
         binding.btnClose.visibility = View.VISIBLE
         binding.btnAddText.visibility = View.VISIBLE
+        if (!isSelectedImage) {
+            binding.btnSound.visibility = View.VISIBLE
+        }
         binding.btnMusic.visibility = View.VISIBLE
         binding.btnMore.visibility = View.VISIBLE
         binding.blockButton.visibility = View.GONE
@@ -617,20 +673,158 @@ class StoryActivity : AppCompatActivity() {
     /** Chọn nhạc nền → tạo ExoPlayer riêng cho nhạc **/
     private fun finishChooseMusic(music: Music?) {
         musicSelected = music
+
+        // ❗ Tắt tiếng video
+        player.volume = 0f
+        isMuted = true
+        binding.btnSound.setImageResource(R.drawable.ic_sound_off)
+
+        // Clear nhạc cũ
         musicPlayer.release()
 
         music?.url?.let { url ->
-            musicPlayer = ExoPlayer.Builder(this).build().apply {
-                setMediaItem(MediaItem.fromUri(url))
-                repeatMode = Player.REPEAT_MODE_ONE
-                playWhenReady = true
-                volume = 1f
-                prepare()
-            }
+
+            // 1️⃣ Tạo player
+            val rawMusicPlayer = ExoPlayer.Builder(this).build()
+            rawMusicPlayer.setMediaItem(MediaItem.fromUri(url))
+            rawMusicPlayer.prepare()
+
+            // 2️⃣ Khi nhạc READY → bắt đầu xử lý duration
+            rawMusicPlayer.addListener(object : Player.Listener {
+                @OptIn(UnstableApi::class)
+                override fun onPlaybackStateChanged(state: Int) {
+                    if (state == Player.STATE_READY) {
+
+                        val videoDuration = player.duration
+                        val musicDuration = rawMusicPlayer.duration
+
+                        // 🔹 Cập nhật musicActualDurationMs
+                        musicActualDurationMs =
+                            if (musicDuration > videoDuration) videoDuration else musicDuration
+
+                        if (musicDuration > videoDuration) {
+                            isMusicClipped = true
+                            musicActualDurationMs = videoDuration
+                        } else {
+                            isMusicClipped = false
+                            musicActualDurationMs = musicDuration
+                        }
+
+                        // Trường hợp A: Nhạc dài hơn video → CẮT NHẠC
+                        if (musicDuration > videoDuration) {
+                            val clipping = ClippingMediaSource(
+                                ProgressiveMediaSource.Factory(DefaultDataSource.Factory(this@StoryActivity))
+                                    .createMediaSource(MediaItem.fromUri(url)),
+                                0,
+                                videoDuration * 1000   // cắt đúng bằng thời lượng video
+                            )
+
+                            musicPlayer = ExoPlayer.Builder(this@StoryActivity).build().apply {
+                                setMediaSource(clipping)
+                                playWhenReady = true
+                                repeatMode = Player.REPEAT_MODE_ALL // 🔹 lặp lại đoạn nhạc cắt
+                                volume = 1f
+                                prepare()
+                            }
+                        }
+                        // Trường hợp B: Nhạc ngắn hơn video → chạy 1 lần, KHÔNG LẶP
+                        else {
+                            musicPlayer = rawMusicPlayer.apply {
+                                repeatMode = Player.REPEAT_MODE_OFF
+                                playWhenReady = true
+                            }
+                        }
+                    }
+                }
+            })
         }
+
         binding.blockMusic.visibility = View.VISIBLE
         binding.tvArtist.text = music?.artist
         binding.tvTitle.text = music?.title
+    }
+
+
+    private fun createOverlayWithHole(
+        blockView: View,
+        textureView: TextureView,
+        textView: View,
+        blockViewMusic: View,
+    ): Bitmap {
+        // ensure laid out
+        if (blockView.width == 0 || blockView.height == 0) {
+            throw IllegalStateException("blockView not laid out yet")
+        }
+
+        val blockW = blockView.width
+        val blockH = blockView.height
+
+        // Tọa độ textureView nằm trong blockView (blockView là parent trong layout của bạn)
+        val videoLeft = textureView.left
+        val videoTop = textureView.top
+        val videoW = textureView.width
+        val videoH = textureView.height
+
+        // Tạo bitmap result (ARGB_8888 để có alpha)
+        val result = createBitmap(blockW, blockH)
+        val canvas = Canvas(result)
+
+        // 1) Vẽ background của blockView (nếu có) lên canvas
+        val bg = blockView.background
+        if (bg != null) {
+            bg.setBounds(0, 0, blockW, blockH)
+            bg.draw(canvas)
+        } else {
+            // fallback: fill black if no background
+            canvas.drawColor(Color.BLACK)
+        }
+
+        // 3) MAKE HOLE: xóa vùng video để làm trong suốt (để video bên dưới hiện ra)
+        val clearPaint = Paint()
+        clearPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+        canvas.drawRect(
+            videoLeft.toFloat(),
+            videoTop.toFloat(),
+            (videoLeft + videoW).toFloat(),
+            (videoTop + videoH).toFloat(),
+            clearPaint
+        )
+        // important: reset xfermode (not strictly necessary here)
+        clearPaint.xfermode = null
+
+        // 4) VẼ textView lên canvas (nếu nằm trên vùng video, nó vẽ lên trên)
+        // (Một số layouts có thể đã vẽ text khi loop child; nếu chưa, vẽ lại để chắc chắn vị trí layer đúng)
+
+        // cần kiểm tra đoạn này nếu
+        if (textView.isVisible) {
+            canvas.save()
+            canvas.translate(overlayInfo.posX, overlayInfo.posY)
+            textView.draw(canvas)
+            canvas.restore()
+        }
+
+        // vẽ liên quan đến nhạc
+        if (blockViewMusic.isVisible) {
+            canvas.save()
+            canvas.translate(overlayInfoMusic.posX, overlayInfoMusic.posY)
+            blockViewMusic.draw(canvas)
+            canvas.restore()
+        }
+
+        return result
+    }
+
+
+    private fun saveOverlayBitmapToFile(
+        context: Context,
+        bmp: Bitmap,
+        filename: String = "overlay.png"
+    ): File {
+        val file = File(context.filesDir, filename)
+        FileOutputStream(file).use { out ->
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
+        }
+        return file
     }
 
     private fun changeBackgroundText(textStyle: String) {
@@ -722,90 +916,6 @@ class StoryActivity : AppCompatActivity() {
             binding.etEditableText.setBackgroundResource(R.drawable.bg_block_button) // bg_new.xml
             binding.etEditableText.setTextColor("#ffff00".toColorInt())
         }
-    }
-
-    private fun createOverlayWithHole(
-        blockView: View,
-        textureView: TextureView,
-        textView: View
-    ): Bitmap {
-        // ensure laid out
-        if (blockView.width == 0 || blockView.height == 0) {
-            throw IllegalStateException("blockView not laid out yet")
-        }
-
-        val blockW = blockView.width
-        val blockH = blockView.height
-
-        // Tọa độ textureView nằm trong blockView (blockView là parent trong layout của bạn)
-        val videoLeft = textureView.left
-        val videoTop = textureView.top
-        val videoW = textureView.width
-        val videoH = textureView.height
-
-        // Tạo bitmap result (ARGB_8888 để có alpha)
-        val result = createBitmap(blockW, blockH)
-        val canvas = Canvas(result)
-
-        // 1) Vẽ background của blockView (nếu có) lên canvas
-        val bg = blockView.background
-        if (bg != null) {
-            bg.setBounds(0, 0, blockW, blockH)
-            bg.draw(canvas)
-        } else {
-            // fallback: fill black if no background
-            canvas.drawColor(Color.BLACK)
-        }
-
-        // Đoạn này liên quan đến việc mà vẽ những thành phần View còn bên trong ViewGroup
-
-//        if (blockView is ViewGroup) {
-//            for (i in 0 until blockView.childCount) {
-//                val child = blockView.getChildAt(i)
-//
-//                // bỏ textureView (video) + bỏ cả textView
-//                if (child === textureView || child === textView) continue
-//
-//                canvas.save()
-//                canvas.translate(child.left.toFloat(), child.top.toFloat())
-//                child.draw(canvas)
-//                canvas.restore()
-//            }
-//        }
-
-        // 3) MAKE HOLE: xóa vùng video để làm trong suốt (để video bên dưới hiện ra)
-        val clearPaint = Paint()
-        clearPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
-        canvas.drawRect(
-            videoLeft.toFloat(),
-            videoTop.toFloat(),
-            (videoLeft + videoW).toFloat(),
-            (videoTop + videoH).toFloat(),
-            clearPaint
-        )
-        // important: reset xfermode (not strictly necessary here)
-        clearPaint.xfermode = null
-
-        // 4) VẼ textView lên canvas (nếu nằm trên vùng video, nó vẽ lên trên)
-        // (Một số layouts có thể đã vẽ text khi loop child; nếu chưa, vẽ lại để chắc chắn vị trí layer đúng)
-        canvas.save()
-        canvas.translate(overlayInfo.posX, overlayInfo.posY)
-        textView.draw(canvas)
-        canvas.restore()
-
-        return result
-    }
-
-    private fun saveOverlayBitmapToFile(
-        context: Context,
-        bmp: Bitmap,
-        filename: String = "overlay.png"
-    ): File {
-        val file = File(context.filesDir, filename)
-        FileOutputStream(file).use { out ->
-            bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
-        }
-        return file
     }
 
     override fun onDestroy() {

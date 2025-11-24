@@ -36,6 +36,7 @@
             android:id="@+id/btn_home"
             android:layout_width="25dp"
             android:layout_height="25dp"
+            android:layout_marginLeft="15dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:srcCompat="@drawable/ic_home" />
@@ -55,23 +56,16 @@
             android:layout_width="25dp"
             android:layout_height="25dp"
             app:layout_constraintBottom_toBottomOf="@id/btn_home"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintLeft_toRightOf="@id/btn_search"
+            app:layout_constraintRight_toLeftOf="@id/btn_my_profile"
             app:srcCompat="@drawable/ic_add" />
 
-        <ImageView
-            android:id="@+id/btn_heart"
-            android:layout_width="27dp"
-            android:layout_height="27dp"
-            app:layout_constraintBottom_toBottomOf="@id/btn_home"
-            app:layout_constraintLeft_toRightOf="@id/btn_add"
-            app:layout_constraintRight_toLeftOf="@id/btn_my_profile"
-            app:srcCompat="@drawable/ic_video" />
 
         <ImageView
             android:id="@+id/btn_my_profile"
             android:layout_width="25dp"
             android:layout_height="25dp"
+            android:layout_marginRight="15dp"
             app:layout_constraintBottom_toBottomOf="@id/btn_home"
             app:layout_constraintRight_toRightOf="parent"
             app:srcCompat="@drawable/ic_profile" />

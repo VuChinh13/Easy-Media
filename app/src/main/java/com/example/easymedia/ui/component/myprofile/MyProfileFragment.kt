@@ -9,26 +9,25 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.GridLayoutManager
 import com.bumptech.glide.Glide
 import com.example.easymedia.R
+import com.example.easymedia.data.model.Post
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.FragmentMyProfileBinding
-import com.example.easymedia.ui.component.main.MainActivity
-import com.example.easymedia.ui.component.myprofile.adapter.MyPostAdapter
-import com.example.easymedia.ui.component.splash.SplashActivity
-import com.example.easymedia.ui.component.utils.SharedPrefer
-import androidx.core.content.edit
-import com.example.easymedia.data.model.Post
 import com.example.easymedia.ui.component.addpost.AddPostFragment
 import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation.setSlideAnimations
+import com.example.easymedia.ui.component.main.MainActivity
+import com.example.easymedia.ui.component.myprofile.adapter.MyPostAdapter
 import com.example.easymedia.ui.component.postdetail.PostDetailActivity
-import com.example.easymedia.ui.component.search.SearchFragment
+import com.example.easymedia.ui.component.splash.SplashActivity
 import com.example.easymedia.ui.component.updateinformation.UpdateInformationFragment
 import com.example.easymedia.ui.component.utils.IntentExtras
+import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class MyProfileFragment : Fragment() {
     private lateinit var binding: FragmentMyProfileBinding
@@ -77,7 +76,7 @@ class MyProfileFragment : Fragment() {
 
 
         // Chuyển sang chỉnh sửa Profile
-        binding.btnEditProfile.setOnClickListener {
+        binding.ivUpdateInfor.setOnClickListener {
             (activity as MainActivity).showLoading()
 
             myProfileViewModel.getInforUserResult.value.let { user ->
@@ -139,24 +138,23 @@ class MyProfileFragment : Fragment() {
         }
 
         binding.ivLogout.setOnClickListener {
-            val alertDialog =
-                AlertDialog.Builder(requireContext(), android.R.style.Theme_Material_Dialog_Alert)
-                    .setTitle("Đăng xuất")
-                    .setMessage("Bạn có chắc chắn muốn đăng xuất tài khoản?")
-                    .setPositiveButton("Đồng ý") { dialog, _ ->
-                        // Clear dữ liệu
-                        SharedPrefer.getSharedPrefer().edit { clear() }
-                        val intent = Intent(requireActivity(), SplashActivity::class.java)
-                        intent.flags =
-                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        startActivity(intent)
-                        dialog.dismiss()
-                        parentFragmentManager.popBackStack()
-                    }
-                    .setNegativeButton("Hủy") { dialog, _ ->
-                        dialog.dismiss()
-                    }
-            alertDialog.show()
+            MaterialAlertDialogBuilder(requireContext(), R.style.MyAlertDialogTheme)
+                .setTitle("Đăng xuất")
+                .setMessage("Bạn có chắc chắn muốn đăng xuất tài khoản?")
+                .setPositiveButton("Đồng ý") { dialog, _ ->
+                    // Clear dữ liệu
+                    SharedPrefer.getSharedPrefer().edit { clear() }
+                    val intent = Intent(requireActivity(), SplashActivity::class.java)
+                    intent.flags =
+                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    dialog.dismiss()
+                    parentFragmentManager.popBackStack()
+                }
+                .setNegativeButton("Hủy") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
         }
 
         // handle button back

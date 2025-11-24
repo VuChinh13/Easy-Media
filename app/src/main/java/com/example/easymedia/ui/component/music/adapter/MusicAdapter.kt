@@ -13,8 +13,8 @@ import androidx.core.graphics.toColorInt
 class MusicAdapter(
     private val originalList: MutableList<Music>,
     private val onItemClick: (Music) -> Unit,
+    private val isMuted: () -> Unit,
 ) : RecyclerView.Adapter<MusicAdapter.MusicViewHolder>() {
-
     private var filteredList: MutableList<Music> = originalList.toMutableList()
     private var selectedPosition: Int = RecyclerView.NO_POSITION
 
@@ -47,6 +47,8 @@ class MusicAdapter(
             val previousPosition = selectedPosition
             selectedPosition = holder.adapterPosition
 
+            // tắt nhạc đi luôn
+            isMuted()
             // Gọi callback phát nhạc
             onItemClick.invoke(music)
 

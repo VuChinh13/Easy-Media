@@ -39,6 +39,12 @@ class UpdateInformationFragment : Fragment() {
     private val repoAuth: AuthRepository =
         AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
 
+    override fun onResume() {
+        super.onResume()
+        requireActivity().window.setSoftInputMode(
+            android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -152,6 +158,13 @@ class UpdateInformationFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         (activity as MainActivity).showBottomBar()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        requireActivity().window.setSoftInputMode(
+            android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+        )
     }
 }
 

@@ -19,7 +19,6 @@ import com.antonkarpenko.ffmpegkit.FFmpegKit
 import com.antonkarpenko.ffmpegkit.FFmpegKitConfig
 import com.antonkarpenko.ffmpegkit.LogCallback
 import com.antonkarpenko.ffmpegkit.ReturnCode
-import com.antonkarpenko.ffmpegkit.Statistics
 import com.antonkarpenko.ffmpegkit.StatisticsCallback
 import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
 import com.example.easymedia.data.data_source.firebase.FirebaseStoryService
@@ -31,6 +30,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.net.URL
 
 class VideoRenderService : Service() {
 
@@ -64,6 +65,14 @@ class VideoRenderService : Service() {
         story = intent?.getParcelableExtra<Story>(IntentExtras.EXTRA_STORY)
         val durationMs = intent?.getLongExtra(IntentExtras.EXTRA_DURATION_MS, 0L) ?: 0L
 
+
+        val isMuted = intent?.getBooleanExtra(IntentExtras.EXTRA_MUTED, false) ?: false
+        val musicSelected = intent?.getStringExtra(IntentExtras.EXTRA_MUSIC) ?: ""
+        val musicActualDurationMs =
+            intent?.getLongExtra(IntentExtras.EXTRA_DURATION_MUSIC, 0L) ?: 0L
+        val isMusicClipped =
+            intent?.getBooleanExtra(IntentExtras.EXTRA_MUSIC_CLIPPED, false) ?: false
+
         if (videoUri == null || overlayPath.isNullOrEmpty()) {
             stopSelf()
             return START_NOT_STICKY
@@ -74,7 +83,21 @@ class VideoRenderService : Service() {
 
         Thread {
             try {
-                renderVideo(videoUri, File(overlayPath), blockW, blockH, tx, ty, tw, th, durationMs)
+                renderVideo(
+                    videoUri,
+                    File(overlayPath),
+                    blockW,
+                    blockH,
+                    tx,
+                    ty,
+                    tw,
+                    th,
+                    durationMs,
+                    isMuted,
+                    musicSelected,
+                    musicActualDurationMs,
+                    isMusicClipped
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Render failed", e)
             } finally {
@@ -121,10 +144,17 @@ class VideoRenderService : Service() {
         ty: Int,
         tw: Int,
         th: Int,
-        durationMs: Long
+        durationMs: Long,
+        isMuted: Boolean,
+        musicSelected: String,
+        musicActualDurationMs: Long,
+        isMusicClipped: Boolean
     ) {
         try {
-            // Copy input to cache
+
+            // -------------------------
+            // 1) COPY VIDEO INPUT
+            // -------------------------
             val inputVideo = File(cacheDir, "input_video_${System.currentTimeMillis()}.mp4")
             contentResolver.openInputStream(videoUri)?.use { input ->
                 inputVideo.outputStream().use { output ->
@@ -132,115 +162,185 @@ class VideoRenderService : Service() {
                 }
             }
 
+            // -------------------------
+            // 2) TẢI MUSIC TỪ URL (NẾU CÓ)
+            // -------------------------
+            var musicFile: File? = null
+            val hasMusic = musicSelected.isNotEmpty()
+
+            if (hasMusic) {
+                try {
+                    val url = URL(musicSelected)
+                    musicFile = File(cacheDir, "music_${System.currentTimeMillis()}.mp3")
+                    url.openStream().use { input ->
+                        FileOutputStream(musicFile!!).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    Log.d(TAG, "Downloaded music: ${musicFile!!.absolutePath}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Music download failed: $e")
+                    musicFile = null
+                }
+            }
+
             val outputVideo = File(cacheDir, "output_render_${System.currentTimeMillis()}.mp4")
 
-            // Build filter_complex similar to your Activity version (scale -> pad -> overlay)
-            val filter =
-                "[0:v]scale=${tw}:${th}[sv];[sv]pad=${blockW}:${blockH}:${tx}:${ty}:color=0x00000000[bg];[bg][1:v]overlay=0:0"
+            // -------------------------
+            // 3) VIDEO FILTER (scale + pad + overlay)
+            // -------------------------
+            val videoFilter =
+                "[0:v]scale=${tw}:${th}[sv];" +
+                        "[sv]pad=${blockW}:${blockH}:${tx}:${ty}:color=0x00000000[bg];" +
+                        "[bg][1:v]overlay=0:0"
 
-            val cmd = arrayOf(
-                "-y",
-                "-i", inputVideo.absolutePath,
-                "-i", overlayFile.absolutePath,
-                "-filter_complex", filter,
-                "-c:v", "libx264",
-                "-preset", "ultrafast",
-                "-crf", "20",
-                "-c:a", "aac",
-                "-movflags", "+faststart",
-                outputVideo.absolutePath
-            )
+            // -------------------------
+            // 4) XỬ LÍ AUDIO LOGIC
+            // -------------------------
+            val cmd = mutableListOf<String>()
 
-            // Setup log callback for debugging (optional)
+            cmd += listOf("-y")
+            cmd += listOf("-i", inputVideo.absolutePath)   // 0:v + 0:a
+            cmd += listOf("-i", overlayFile.absolutePath)  // 1:v
+
+            var audioCodec = ""
+            var audioMapping = ""
+            var musicInputIndex = -1
+
+            // ----------- CASE 1: mặc định (giữ tiếng video)
+            if (!isMuted && !hasMusic) {
+                audioCodec = "-c:a aac"
+                audioMapping = "-map 0:a"
+            }
+
+            // ----------- CASE 2: tắt tiếng video, không có nhạc
+            if (isMuted && !hasMusic) {
+                audioCodec = "-an"
+            }
+
+            // ----------- CASE 3 + 4: có nhạc
+            if (isMuted && hasMusic && musicFile != null) {
+                cmd += listOf("-i", musicFile.absolutePath) // input index 2
+                musicInputIndex = 2
+
+                audioCodec = "-c:a aac"
+
+                if (isMusicClipped) {
+                    audioMapping = "-map $musicInputIndex:a -t ${musicActualDurationMs / 1000.0}"
+                } else {
+                    audioMapping = "-map $musicInputIndex:a"
+                }
+            }
+
+            // -------------------------
+            // 5) GHÉP VIDEO FILTER
+            // -------------------------
+            cmd += listOf("-filter_complex", videoFilter)
+
+            cmd += listOf("-c:v", "libx264")
+            cmd += listOf("-preset", "ultrafast")
+            cmd += listOf("-crf", "20")
+
+            // audio mapping
+            if (audioMapping.isNotEmpty()) {
+                cmd += audioMapping.split(" ")
+            }
+            // audio codec
+            if (audioCodec.isNotEmpty()) {
+                cmd += audioCodec.split(" ")
+            }
+
+            // -------------------------
+            // 6) GIỚI HẠN VIDEO 60 GIÂY
+            // -------------------------
+            val maxDurationSec = 60
+
+            if (durationMs > maxDurationSec * 1000L) {
+                cmd += listOf("-t", maxDurationSec.toString())
+            }
+
+            // movflags
+            cmd += listOf("-movflags", "+faststart")
+            cmd += listOf(outputVideo.absolutePath)
+
+
+            // -------------------------
+            // 6) LOGGING
+            // -------------------------
+            Log.d(TAG, "FFmpeg CMD:\n${cmd.joinToString(" ")}")
+
             FFmpegKitConfig.enableLogCallback(LogCallback { log ->
-                Log.d(TAG, "FFmpegLog: ${log.level} ${log.message}")
+                Log.d(TAG, "FFmpegLog: ${log.message}")
             })
 
-            // Setup statistics callback to update notification progress
-            FFmpegKitConfig.enableStatisticsCallback(StatisticsCallback { stats: Statistics ->
-                // stats.getTime() is milliseconds of processed media
+            FFmpegKitConfig.enableStatisticsCallback(StatisticsCallback { stats ->
                 val timeMs = stats.time
                 if (durationMs > 0) {
-                    val percent = ((timeMs.toDouble() / durationMs.toDouble()) * 100.0).toInt()
-                        .coerceIn(0, 100)
-                    // update notification
-                    val notif = createNotification(percent)
-                    notificationManager.notify(NOTIFICATION_ID, notif)
+                    val percent =
+                        ((timeMs.toDouble() / durationMs.toDouble()) * 100).toInt().coerceIn(0, 100)
+                    notificationManager.notify(
+                        NOTIFICATION_ID,
+                        createNotification(percent)
+                    )
                 }
             })
 
-            // Execute async
+            // -------------------------
+            // 7) RUN FFmpeg
+            // -------------------------
             FFmpegKit.executeAsync(cmd.joinToString(" ")) { session ->
                 val returnCode = session.returnCode
+
                 if (ReturnCode.isSuccess(returnCode)) {
                     Log.d(TAG, "FFmpeg success: ${outputVideo.absolutePath}")
-                    // Save to public storage (MediaStore)
-                    val savedUri = saveVideoToPublic(outputVideo)
-                    Log.d(TAG, "Saved to MediaStore: $savedUri")
 
-                    // Xử lí video khi mà thành công
-                    story?.let { it ->
+                    val savedUri = saveVideoToPublic(outputVideo)
+                    Log.d(TAG, "Saved to gallery: $savedUri")
+
+                    // upload story
+                    story?.let { st ->
                         CoroutineScope(Dispatchers.IO).launch {
                             try {
-                                it.durationMs = getVideoDuration(outputVideo)
-                                val result = storyRepository.uploadStory(it, outputVideo, true)
+                                st.durationMs = getVideoDuration(outputVideo)
+                                val result = storyRepository.uploadStory(st, outputVideo, true)
+
                                 if (result) {
-                                    // --- 1) cập nhật notification FINAL ở đây ---
-                                    val finalNotif = NotificationCompat.Builder(
+                                    val notif = NotificationCompat.Builder(
                                         this@VideoRenderService,
                                         CHANNEL_ID
                                     )
-                                        .setContentTitle("Tin của bạn đang được đăng")
-                                        .setContentText("Đã xử lý xong.")
+                                        .setContentTitle("Tin đang được đăng")
+                                        .setContentText("Xử lý xong.")
                                         .setSmallIcon(android.R.drawable.ic_media_play)
-                                        .setProgress(0, 0, false)
                                         .build()
-                                    notificationManager.notify(NOTIFICATION_ID, finalNotif)
+                                    notificationManager.notify(NOTIFICATION_ID, notif)
 
-                                    // thành công thì là true thì gửi 1 cái gì đó về bên HomeActivity thì có dc không
                                     val intent = Intent("com.example.easymedia.UPLOAD_DONE")
                                     intent.putExtra(IntentExtras.RESULT_DATA_STR, true)
                                     sendBroadcast(intent)
-                                } else {
-                                    // nếu như mà không thành công thì sao
                                 }
                             } catch (e: Exception) {
-                                Log.e("VideoRenderService", "Upload failed", e)
-                                // tương tự: notify lỗi + broadcast false
-                                val errNotif =
-                                    NotificationCompat.Builder(this@VideoRenderService, CHANNEL_ID)
-                                        .setContentTitle("Lỗi khi xử lý video")
-                                        .setContentText(e.message ?: "Unknown")
-                                        .setSmallIcon(android.R.drawable.stat_notify_error)
-                                        .setProgress(0, 0, false)
-                                        .build()
-                                notificationManager.notify(NOTIFICATION_ID, errNotif)
-
+                                Log.e(TAG, "Upload failed", e)
                             }
                         }
                     }
+
                 } else {
                     Log.e(TAG, "FFmpeg failed: $returnCode")
                     Log.e(TAG, session.allLogsAsString)
 
-                    val errNotif = NotificationCompat.Builder(this, CHANNEL_ID)
-                        .setContentTitle("Lỗi khi xử lý video")
+                    val err = NotificationCompat.Builder(this, CHANNEL_ID)
+                        .setContentTitle("Lỗi xử lý video")
                         .setContentText("Vui lòng thử lại.")
                         .setSmallIcon(android.R.drawable.stat_notify_error)
-                        .setProgress(0, 0, false)
                         .build()
-                    notificationManager.notify(NOTIFICATION_ID, errNotif)
+
+                    notificationManager.notify(NOTIFICATION_ID, err)
                 }
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Exception renderVideo", e)
-            val errNotif = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Lỗi khi xử lý video")
-                .setContentText(e.message ?: "Unknown")
-                .setSmallIcon(android.R.drawable.stat_notify_error)
-                .build()
-            notificationManager.notify(NOTIFICATION_ID, errNotif)
         }
     }
 

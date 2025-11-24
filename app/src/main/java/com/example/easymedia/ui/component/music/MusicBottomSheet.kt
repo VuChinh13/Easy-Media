@@ -20,7 +20,10 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
-class MusicBottomSheet(private val musicSelected: (Music?) -> Unit) : BottomSheetDialogFragment() {
+class MusicBottomSheet(
+    private val musicSelected: (Music?) -> Unit,
+    private val toggleSound: () -> Unit
+) : BottomSheetDialogFragment() {
     private var listMusic = mutableListOf<Music>()
     private lateinit var binding: MusicBottomsheetBinding
     private lateinit var adapter: MusicAdapter
@@ -77,9 +80,9 @@ class MusicBottomSheet(private val musicSelected: (Music?) -> Unit) : BottomShee
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = MusicAdapter(listMusic) { selectedMusic ->
+        adapter = MusicAdapter(listMusic, { selectedMusic ->
             playMusic(selectedMusic)
-        }
+        }, { toggleSound() })
 
         binding.rcvMusic.layoutManager = LinearLayoutManager(context)
         binding.rcvMusic.adapter = adapter

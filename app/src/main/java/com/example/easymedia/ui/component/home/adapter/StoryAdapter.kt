@@ -142,7 +142,9 @@ class StoryAdapter(
         // lọc ra các người dùng mà ko bị trùng
         // đưa lên trên đầu
         val filter = uniqueStories.sortedByDescending { it.userId == userId }
-        myStory = filter[0].userId == userId
+        if (filter.isNotEmpty()) {
+            myStory = filter[0].userId == userId
+        }
         listSize = if (!myStory) {
             filter.size + 1
         } else filter.size

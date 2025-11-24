@@ -31,5 +31,9 @@ object IntentExtras {
     const val EXTRA_TH = "extra_th"
     const val EXTRA_DURATION_MS = "extra_duration_ms"
     const val EXTRA_STORY = "extra_story"
+    const val EXTRA_MUTED = "extra_muted"
+    const val EXTRA_MUSIC = "extra_music"
+    const val EXTRA_DURATION_MUSIC = "extra_duration_music"
+    const val EXTRA_MUSIC_CLIPPED = "extra_music_clipped"
 
 }

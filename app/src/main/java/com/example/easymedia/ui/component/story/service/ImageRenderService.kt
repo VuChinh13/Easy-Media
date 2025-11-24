@@ -10,7 +10,6 @@ import com.example.easymedia.data.repository.StoryRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import androidx.core.graphics.createBitmap
 import com.example.easymedia.ui.component.utils.IntentExtras
 import java.io.File

@@ -4,11 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
-    android:clickable="true"
-    android:focusable="true"
     android:layout_height="match_parent"
     android:background="@color/white"
-    android:fitsSystemWindows="true">
+    android:clickable="true"
+    android:fitsSystemWindows="true"
+    android:focusable="true">
 
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -71,46 +71,31 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tv_introduce" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_edit_profile"
-        android:layout_width="150dp"
-        android:layout_height="30dp"
-        android:layout_marginTop="15dp"
-        android:background="@drawable/bg_button_myprofile"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:padding="5dp"
-        android:text="Chỉnh sửa trang cá nhân"
-        android:textAllCaps="false"
-        android:textColor="@color/black"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        app:layout_constraintLeft_toLeftOf="@id/tv_introduce"
-        app:layout_constraintTop_toBottomOf="@id/tv_introduce" />
 
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_shared_profile"
-        android:layout_width="160dp"
-        android:layout_height="30dp"
-        android:layout_marginLeft="5dp"
-        android:background="@drawable/bg_button_myprofile"
-        android:maxLines="1"
-        android:padding="5dp"
-        android:text="Chia sẻ trang cá nhân"
-        android:textAllCaps="false"
-        android:textColor="@color/black"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@+id/btn_edit_profile"
-        app:layout_constraintLeft_toRightOf="@id/btn_edit_profile"
-        app:layout_constraintTop_toTopOf="@id/btn_edit_profile" />
+    <!--    <androidx.appcompat.widget.AppCompatButton-->
+    <!--        android:id="@+id/btn_shared_profile"-->
+    <!--        android:layout_width="0dp"-->
+    <!--        android:layout_height="30dp"-->
+    <!--        android:layout_marginLeft="5dp"-->
+    <!--        android:layout_marginRight="20dp"-->
+    <!--        android:background="@drawable/bg_button_myprofile"-->
+    <!--        android:maxLines="1"-->
+    <!--        android:padding="5dp"-->
+    <!--        android:text="Chia sẻ trang cá nhân"-->
+    <!--        android:textAllCaps="false"-->
+    <!--        android:textColor="@color/black"-->
+    <!--        android:textSize="15sp"-->
+    <!--        android:textStyle="bold"-->
+    <!--        app:layout_constraintBottom_toBottomOf="@+id/btn_edit_profile"-->
+    <!--        app:layout_constraintLeft_toRightOf="@id/btn_edit_profile"-->
+    <!--        app:layout_constraintRight_toRightOf="parent"-->
+    <!--        app:layout_constraintTop_toTopOf="@id/btn_edit_profile" />-->
 
     <TextView
         android:id="@+id/tv_introduce"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="15dp"
         android:layout_marginBottom="10dp"
         android:paddingLeft="0dp"
         android:textStyle="normal"
@@ -157,7 +142,7 @@
         android:id="@+id/tv_total_followers"
         android:layout_width="60dp"
         android:layout_height="23dp"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="6dp"
         android:fontFamily="sans-serif-medium"
         android:text="0"
         app:layout_constraintBottom_toBottomOf="@+id/tv_total_post"
@@ -217,7 +202,7 @@
         android:id="@+id/cardView"
         android:layout_width="70dp"
         android:layout_height="70dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="15dp"
         app:cardCornerRadius="35dp"
         app:layout_constraintStart_toStartOf="@+id/tv_username"
         app:layout_constraintTop_toBottomOf="@id/tv_username">
@@ -232,45 +217,24 @@
             tools:srcCompat="@tools:sample/avatars" />
     </androidx.cardview.widget.CardView>
 
-    <androidx.cardview.widget.CardView
-        android:layout_width="40dp"
-        android:layout_height="30dp"
-        android:layout_marginLeft="5dp"
-        app:cardBackgroundColor="#D6C9C7"
-        app:cardCornerRadius="10dp"
-        app:layout_constraintBottom_toBottomOf="@id/btn_shared_profile"
-        app:layout_constraintLeft_toRightOf="@id/btn_shared_profile"
-        app:layout_constraintTop_toTopOf="@id/btn_shared_profile">
+    <!--    <androidx.cardview.widget.CardView-->
+    <!--        android:layout_width="40dp"-->
+    <!--        android:layout_height="30dp"-->
+    <!--        android:layout_marginLeft="5dp"-->
+    <!--        app:cardBackgroundColor="#D6C9C7"-->
+    <!--        app:cardCornerRadius="10dp"-->
+    <!--        app:layout_constraintBottom_toBottomOf="@id/btn_shared_profile"-->
+    <!--        app:layout_constraintLeft_toRightOf="@id/btn_shared_profile"-->
+    <!--        app:layout_constraintTop_toTopOf="@id/btn_shared_profile">-->
 
-        <ImageView
-            android:id="@+id/iv_add_people"
-            android:layout_width="35dp"
-            android:layout_height="23dp"
-            android:layout_gravity="center"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_add_people" />
-    </androidx.cardview.widget.CardView>
-
-    <ImageView
-        android:id="@+id/iv_add_story"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:layout_marginTop="10dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/ic_add_story_3"
-        app:layout_constraintStart_toStartOf="@+id/btn_edit_profile"
-        app:layout_constraintTop_toBottomOf="@+id/btn_edit_profile" />
-
-    <TextView
-        android:id="@+id/tv_title3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-medium"
-        android:text="Mới"
-        android:textSize="13sp"
-        app:layout_constraintEnd_toEndOf="@+id/iv_add_story"
-        app:layout_constraintStart_toStartOf="@+id/iv_add_story"
-        app:layout_constraintTop_toBottomOf="@+id/iv_add_story" />
+    <!--        <ImageView-->
+    <!--            android:id="@+id/iv_add_people"-->
+    <!--            android:layout_width="35dp"-->
+    <!--            android:layout_height="23dp"-->
+    <!--            android:layout_gravity="center"-->
+    <!--            android:scaleType="fitCenter"-->
+    <!--            android:src="@drawable/ic_add_people" />-->
+    <!--    </androidx.cardview.widget.CardView>-->
 
 
     <View
@@ -281,13 +245,14 @@
         android:background="#e0e0e0"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_title3" />
+        app:layout_constraintTop_toBottomOf="@id/tv_introduce" />
 
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_my_post"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginTop="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
