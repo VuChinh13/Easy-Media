@@ -22,6 +22,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+
     configurations.all {
         exclude(mapOf("group" to "com.google.protobuf", "module" to "protobuf-kotlin"))
         exclude(mapOf("group" to "com.google.protobuf", "module" to "protobuf-kotlin-lite"))
@@ -51,11 +52,15 @@ android {
 
 
 dependencies {
+    // CometChat UIKit
+    implementation("com.cometchat:chat-uikit-android:5.2.2")
+    // Optional: voice/video calling
+    implementation("com.cometchat:calls-sdk-android:4.3.1")
     implementation("com.tomtom.sdk.maps:map-display:1.26.3") {
         exclude(group = "com.google.protobuf", module = "protobuf-java")
     }
 
-    implementation("com.tomtom.sdk.search:search-online:1.26.3"){
+    implementation("com.tomtom.sdk.search:search-online:1.26.3") {
         exclude(group = "com.google.protobuf", module = "protobuf-java")
     }
 
@@ -88,8 +93,8 @@ dependencies {
     implementation("com.tbuonomo:dotsindicator:5.0")
     implementation("com.facebook.shimmer:shimmer:0.5.0")
     // Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
 
+    implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
     // Firebase SDK cần thiết
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")

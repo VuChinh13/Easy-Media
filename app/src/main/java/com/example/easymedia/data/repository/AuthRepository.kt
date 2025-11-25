@@ -31,6 +31,9 @@ interface AuthRepository {
         profilePicture: File?,
         gender: String?
     ): Result<Unit>
+
+    suspend fun addFollowing(currentUid: String, targetUid: String): Result<Unit>
+    suspend fun removeFollowing(currentUid: String, targetUid: String): Result<Unit>
 }
 
 class AuthRepositoryImpl(
@@ -108,5 +111,17 @@ class AuthRepositoryImpl(
                 profilePicture,
                 gender
             )
+        }
+
+    override suspend fun addFollowing(
+        currentUid: String,
+        targetUid: String
+    ): Result<Unit> = runCatching {
+        service.addFollowing(currentUid, targetUid)
+    }
+
+    override suspend fun removeFollowing(currentUid: String, targetUid: String): Result<Unit> =
+        runCatching {
+            service.removeFollowing(currentUid, targetUid)
         }
 }

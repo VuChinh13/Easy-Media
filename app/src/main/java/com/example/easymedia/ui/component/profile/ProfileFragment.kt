@@ -1,24 +1,42 @@
 package com.example.easymedia.ui.component.profile
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import com.bumptech.glide.Glide
 import com.example.easymedia.R
 import com.example.easymedia.data.model.User
+import com.example.easymedia.data.repository.AuthRepositoryImpl
+import com.example.easymedia.data.data_source.firebase.FirebaseAuthService
+import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
 import com.example.easymedia.databinding.FragmentProfileBinding
+import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation.setSlideAnimations
+import com.example.easymedia.ui.component.follower.FollowerBottomSheet
 import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.profile.adapter.ProfileAdapter
 import com.example.easymedia.ui.component.utils.IntentExtras
+import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.component.following.FollowingBottomSheet
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ProfileFragment : Fragment() {
+
     private lateinit var binding: FragmentProfileBinding
     private val myProfileViewModel: ProfileViewModel by viewModels()
     private lateinit var postAdapter: ProfileAdapter
+
+    // Repository
+    private val authRepository =
+        AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -30,27 +48,151 @@ class ProfileFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         (activity as MainActivity).hideLoading()
-        // Nhận dữ liệu khi mà truyền sang
-        val user = arguments?.getParcelable<User>(IntentExtras.EXTRA_USER)
-        myProfileViewModel.getUserPosts(user!!.id)
 
+        // Lấy user được truyền qua arguments
+        val user = arguments?.getParcelable<User>(IntentExtras.EXTRA_USER)
+        if (user == null) {
+            Toast.makeText(requireContext(), "Lỗi: User không tồn tại", Toast.LENGTH_SHORT).show()
+            parentFragmentManager.popBackStack()
+            return
+        }
+
+        // Lấy ID của mình (đang đăng nhập)
+        val currentUserId = SharedPrefer.getId()
+        if (currentUserId == null) {
+            Toast.makeText(requireContext(), "Bạn chưa đăng nhập", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // gọi load posts
+        myProfileViewModel.getUserPosts(user.id)
+
+        // shimmer
         binding.shimmerUsername.startShimmer()
-        // hiển thị lên trên UI
+
+        // Set user lên UI
         binding.tvName.text = user.fullName
         binding.tvTotalPost.text = user.postCount.toString()
         binding.tvIntroduce.text = user.bio
         binding.tvUsername.text = user.username
-        binding.tvTotalFollowers.text = user.followers.toString()
-        binding.tvTotalFollowing.text = user.following.toString()
-        Glide.with(this).load(user.profilePicture).error(R.drawable.ic_avatar)
+        binding.tvTotalFollowers.text = user.followers.size.toString()
+        binding.tvTotalFollowing.text = user.following.size.toString()
+
+        Glide.with(this)
+            .load(user.profilePicture)
+            .error(R.drawable.ic_avatar)
             .into(binding.ivAvatar)
 
+        // ================================
+        // FOLLOW / UNFOLLOW
+        // ================================
+
+        // Cho phép thay đổi trạng thái follow
+        var isFollowing = user.followers.contains(currentUserId)
+
+        fun updateFollowUI() {
+            if (isFollowing) {
+                binding.btnFollow.text = "Đang theo dõi"
+                binding.btnFollow.setBackgroundResource(R.drawable.bg_button_myprofile)
+                binding.btnFollow.setTextColor(Color.BLACK)
+            } else {
+                binding.btnFollow.text = "Theo dõi"
+                binding.btnFollow.setBackgroundResource(R.drawable.bg_button_following)
+                binding.btnFollow.setTextColor(Color.WHITE)
+            }
+
+            binding.tvTotalFollowers.text = user.followers.size.toString()
+            binding.tvTotalFollowing.text = user.following.size.toString()
+        }
+
+        updateFollowUI()
+
+        // Xử lý nút Follow
+        binding.btnFollow.setOnClickListener {
+            binding.btnFollow.isEnabled = false // chống double click
+            lifecycleScope.launch {
+                try {
+                    if (isFollowing) {
+                        // UNFOLLOW
+                        val result = withContext(Dispatchers.IO) {
+                            authRepository.removeFollowing(currentUserId, user.id)
+                        }
+
+                        result.onSuccess {
+                            // update local followers
+                            user.followers = user.followers.filter { it != currentUserId }
+                            isFollowing = false
+                            Toast.makeText(requireContext(), "Đã huỷ theo dõi", Toast.LENGTH_SHORT)
+                                .show()
+                        }.onFailure {
+                            Toast.makeText(
+                                requireContext(),
+                                "Lỗi: ${it.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+
+                    } else {
+                        // FOLLOW
+                        val result = withContext(Dispatchers.IO) {
+                            authRepository.addFollowing(currentUserId, user.id)
+                        }
+
+                        result.onSuccess {
+                            user.followers = user.followers + currentUserId
+                            isFollowing = true
+                            Toast.makeText(requireContext(), "Đã theo dõi", Toast.LENGTH_SHORT)
+                                .show()
+                        }.onFailure {
+                            Toast.makeText(
+                                requireContext(),
+                                "Lỗi: ${it.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+
+                    updateFollowUI()
+
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), "Lỗi: ${e.message}", Toast.LENGTH_LONG).show()
+                } finally {
+                    binding.btnFollow.isEnabled = true
+                }
+            }
+        }
+
+        binding.tvTotalFollowing.setOnClickListener {
+            val followingSheet = FollowingBottomSheet(
+                user.following
+            ) { user ->
+                switchProfile(user)
+            }
+            followingSheet.show(
+                parentFragmentManager, // hoặc childFragmentManager
+                "FollowingBottomSheet"
+            )
+        }
+
+        binding.tvTotalFollowers.setOnClickListener {
+            val followingSheet = FollowerBottomSheet(
+                user.followers
+            ) { user ->
+                switchProfile(user)
+            }
+            followingSheet.show(
+                parentFragmentManager, // hoặc childFragmentManager
+                "FollowerBottomSheet"
+            )
+        }
+
+        // RecyclerView Posts
         postAdapter = ProfileAdapter(requireActivity(), mutableListOf())
         binding.rvMyPost.layoutManager = GridLayoutManager(requireContext(), 3)
         binding.rvMyPost.adapter = postAdapter
         postAdapter.updateUser(user)
 
-        // Lắng nghe sự kiện khi mà lấy được tất cả bài viết của người dùng
+        // Lắng nghe kết quả load posts
         myProfileViewModel.getUserPostsResult.observe(viewLifecycleOwner) { result ->
             binding.shimmerUsername.stopShimmer()
             binding.shimmerUsername.visibility = View.INVISIBLE
@@ -59,10 +201,22 @@ class ProfileFragment : Fragment() {
             }
         }
 
-        // khi mà quay về thì làm thế nào nhể hay là chỉ là quay về trang trước như là bình thường
+        // Quay về
         binding.btnClose.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
     }
-}
 
+    fun switchProfile(user: User) {
+        val profileFragment = ProfileFragment()
+        val bundle = Bundle().apply {
+            putParcelable(IntentExtras.EXTRA_USER, user)
+        }
+        profileFragment.arguments = bundle
+        val transaction = requireActivity().supportFragmentManager.beginTransaction()
+        transaction.setSlideAnimations()
+        transaction.add(R.id.fragment, profileFragment)
+        transaction.addToBackStack(null)
+        transaction.commit()
+    }
+}

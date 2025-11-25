@@ -31,8 +31,8 @@ data class User(
     @get:PropertyName("post_count") @set:PropertyName("post_count")
     var postCount: Long = 0L,
 
-    val followers: List<String> = emptyList(),
-    val following: List<String> = emptyList(),
+    var followers: List<String> = emptyList(),
+    var following: List<String> = emptyList(),
 
     @get:PropertyName("created_at") @get:ServerTimestamp
     var createdAt: Date? = null,

@@ -32,6 +32,10 @@ interface AuthService {
         profilePicture: File?,
         gender: String?
     )
+
+    suspend fun addFollowing(currentUid: String, targetUid: String)
+
+    suspend fun removeFollowing(currentUid: String, targetUid: String)
 }
 
 class FirebaseAuthService(private val cloudinary: CloudinaryService) : AuthService {
@@ -171,5 +175,59 @@ class FirebaseAuthService(private val cloudinary: CloudinaryService) : AuthServi
         }
     }
 
+    override suspend fun addFollowing(currentUid: String, targetUid: String) {
+        Log.d("FollowDebug", "addFollowing() called: currentUid=$currentUid, targetUid=$targetUid")
+
+        if (currentUid == targetUid) {
+            Log.e("FollowDebug", "❌ Không thể tự follow chính mình!")
+            return
+        }
+
+        try {
+            val batch = db.batch()
+            val currentRef = db.collection("users").document(currentUid)
+            val targetRef = db.collection("users").document(targetUid)
+
+            Log.d("FollowDebug", "Updating Firestore...")
+
+            batch.update(currentRef, "following", FieldValue.arrayUnion(targetUid))
+            batch.update(targetRef, "followers", FieldValue.arrayUnion(currentUid))
+
+            batch.commit().await()
+
+            Log.d("FollowDebug", "✅ Follow thành công: $currentUid → $targetUid")
+
+        } catch (e: Exception) {
+            Log.e("FollowDebug", "❌ Lỗi khi follow: ${e.message}", e)
+        }
+    }
+
     override fun currentUid(): String? = auth.currentUser?.uid
+
+    override suspend fun removeFollowing(currentUid: String, targetUid: String) {
+        Log.d("FollowDebug", "removeFollowing() called: currentUid=$currentUid, targetUid=$targetUid")
+
+        if (currentUid == targetUid) {
+            Log.e("FollowDebug", "❌ Không thể tự unfollow chính mình!")
+            return
+        }
+
+        try {
+            val batch = db.batch()
+            val currentRef = db.collection("users").document(currentUid)
+            val targetRef = db.collection("users").document(targetUid)
+
+            Log.d("FollowDebug", "Updating Firestore...")
+
+            batch.update(currentRef, "following", FieldValue.arrayRemove(targetUid))
+            batch.update(targetRef, "followers", FieldValue.arrayRemove(currentUid))
+
+            batch.commit().await()
+
+            Log.d("FollowDebug", "✅ Unfollow thành công: $currentUid → $targetUid")
+
+        } catch (e: Exception) {
+            Log.e("FollowDebug", "❌ Lỗi khi unfollow: ${e.message}", e)
+        }
+    }
 }

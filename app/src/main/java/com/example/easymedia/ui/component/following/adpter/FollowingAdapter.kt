@@ -1,4 +1,4 @@
-package com.example.easymedia.ui.like.adapter
+package com.example.easymedia.ui.component.following.adpter
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
@@ -8,14 +8,14 @@ import com.bumptech.glide.Glide
 import com.example.easymedia.R
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.ItemLikeBottomSheetBinding
-import com.example.easymedia.ui.component.home.OnAvatarClickListener
+import com.example.easymedia.ui.component.utils.SharedPrefer
 import java.text.Normalizer
 
-class LikeAdapter(
+class FollowingAdapter(
     private val originalListUser: MutableList<User>,
     private val onDismissCallback: () -> Unit,
-    private val listener: OnAvatarClickListener?
-) : RecyclerView.Adapter<LikeAdapter.LikeViewHolder>() {
+    private val switchScreen: (User) -> Unit
+) : RecyclerView.Adapter<FollowingAdapter.LikeViewHolder>() {
 
     // Danh sách này sẽ được dùng để hiển thị lên màn hình
     private var filteredList: MutableList<User> = originalListUser.toMutableList()
@@ -49,9 +49,11 @@ class LikeAdapter(
                 .into(imageAvatar)
             fullName.text = user.fullName
             username.text = user.username
-            itemView.setOnClickListener {
-                listener?.onAvatarClick(user)
-                onDismissCallback.invoke()
+            if (SharedPrefer.getId() != user.id) {
+                itemView.setOnClickListener {
+                    switchScreen(user)
+                    onDismissCallback.invoke()
+                }
             }
         }
     }

@@ -20,13 +20,16 @@ import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.FragmentMyProfileBinding
 import com.example.easymedia.ui.component.addpost.AddPostFragment
 import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation.setSlideAnimations
+import com.example.easymedia.ui.component.follower.FollowerBottomSheet
 import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.myprofile.adapter.MyPostAdapter
 import com.example.easymedia.ui.component.postdetail.PostDetailActivity
+import com.example.easymedia.ui.component.profile.ProfileFragment
 import com.example.easymedia.ui.component.splash.SplashActivity
 import com.example.easymedia.ui.component.updateinformation.UpdateInformationFragment
 import com.example.easymedia.ui.component.utils.IntentExtras
 import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.component.following.FollowingBottomSheet
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class MyProfileFragment : Fragment() {
@@ -105,6 +108,30 @@ class MyProfileFragment : Fragment() {
             (activity as MainActivity).hideBottomBar()
         }
 
+        binding.tvTotalFollowing.setOnClickListener {
+            val followingSheet = FollowingBottomSheet(
+                myProfileViewModel.getInforUserResult.value?.following ?: listOf(),
+            ) { user ->
+                switchProfile(user)
+            }
+            followingSheet.show(
+                parentFragmentManager, // hoặc childFragmentManager
+                "FollowingBottomSheet"
+            )
+        }
+
+        binding.tvTotalFollowers.setOnClickListener {
+            val followingSheet = FollowerBottomSheet(
+                myProfileViewModel.getInforUserResult.value?.followers ?: listOf(),
+                { user ->
+                    switchProfile(user)
+                }
+            )
+            followingSheet.show(
+                parentFragmentManager, // hoặc childFragmentManager
+                "FollowerBottomSheet"
+            )
+        }
 
         myProfileViewModel.getUserPostsResult.observe(viewLifecycleOwner) { result ->
             if (result.isEmpty()) {
@@ -135,6 +162,8 @@ class MyProfileFragment : Fragment() {
             binding.tvUsername.text = result?.username
             binding.tvTotalPost.text = result?.postCount.toString()
             binding.tvIntroduce.text = result?.bio
+            binding.tvTotalFollowing.text = result?.following?.size.toString()
+            binding.tvTotalFollowers.text = result?.followers?.size.toString()
         }
 
         binding.ivLogout.setOnClickListener {
@@ -194,6 +223,19 @@ class MyProfileFragment : Fragment() {
         intent.putExtra(IntentExtras.EXTRA_USER, user)
         intent.putExtra(IntentExtras.EXTRA_POSITION, position)
         launcher.launch(intent)
+    }
+
+    fun switchProfile(user: User) {
+        val profileFragment = ProfileFragment()
+        val bundle = Bundle().apply {
+            putParcelable(IntentExtras.EXTRA_USER, user)
+        }
+        profileFragment.arguments = bundle
+        val transaction = requireActivity().supportFragmentManager.beginTransaction()
+        transaction.setSlideAnimations()
+        transaction.add(R.id.fragment, profileFragment)
+        transaction.addToBackStack(null)
+        transaction.commit()
     }
 
 //    override fun onResume() {

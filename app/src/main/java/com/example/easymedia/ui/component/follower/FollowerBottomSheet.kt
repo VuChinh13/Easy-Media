@@ -1,4 +1,4 @@
-package com.example.easymedia.ui.like
+package com.example.easymedia.ui.component.follower
 
 import android.content.DialogInterface
 import android.graphics.Color
@@ -13,41 +13,41 @@ import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.easymedia.R
 import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
-import com.example.easymedia.data.data_source.firebase.FirebasePostService
-import com.example.easymedia.data.repository.PostRepositoryImpl
-import com.example.easymedia.databinding.LikeBottomSheetBinding
-import com.example.easymedia.ui.component.home.OnAvatarClickListener
-import com.example.easymedia.ui.like.adapter.LikeAdapter
+import com.example.easymedia.data.data_source.firebase.FirebaseAuthService
+import com.example.easymedia.data.model.User
+import com.example.easymedia.data.repository.AuthRepositoryImpl
+import com.example.easymedia.databinding.FollowerBottomSheetBinding
+import com.example.easymedia.databinding.FollowingBottomSheetBinding
+import com.example.easymedia.ui.component.follower.adapter.FollowerAdapter
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 
-class LikeBottomSheet(val idPost: String, val listener: OnAvatarClickListener?) :
-    BottomSheetDialogFragment() {
-    private val repositoryPost =
-        PostRepositoryImpl(
-            FirebasePostService(cloudinary = CloudinaryServiceImpl())
-        )
+class FollowerBottomSheet(
+    private val listId: List<String>,
+    private val switchScreen: (User) -> Unit
+) : BottomSheetDialogFragment() {
 
-    private lateinit var adapter: LikeAdapter
-    private lateinit var binding: LikeBottomSheetBinding
+    private lateinit var binding: FollowerBottomSheetBinding
+    private val repositoryAuth = AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
+    private val listUser = mutableListOf<User>()
+    private lateinit var adapter: FollowerAdapter
+
+    private val fetchScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        binding = LikeBottomSheetBinding.inflate(inflater, container, false)
+    ): View {
+        binding = FollowerBottomSheetBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onStart() {
         super.onStart()
-
+        // Thiết lập chiều cao của BottomSheet
         val dialog = dialog as? BottomSheetDialog
         dialog?.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
             ?.let { sheet ->
@@ -56,58 +56,68 @@ class LikeBottomSheet(val idPost: String, val listener: OnAvatarClickListener?) 
                 val screenHeight = displayMetrics.heightPixels
                 val desiredHeight = (screenHeight * 0.75).toInt()
 
-                val layoutParams = sheet.layoutParams
-                layoutParams.height = desiredHeight
-                sheet.layoutParams = layoutParams
+                sheet.layoutParams.height = desiredHeight
+                sheet.requestLayout()
 
                 behavior.state = BottomSheetBehavior.STATE_EXPANDED
                 behavior.maxHeight = desiredHeight
             }
 
+        // Tùy chỉnh SearchView
         val searchView = binding.btnSearchLike
-        val searchEditText = searchView.findViewById<AutoCompleteTextView>(
-            androidx.appcompat.R.id.search_src_text
-        )
+        val searchEditText =
+            searchView.findViewById<AutoCompleteTextView>(androidx.appcompat.R.id.search_src_text)
         searchEditText.setTextColor(Color.BLACK)
         searchEditText.textSize = 17f
-        val searchIcon = searchView.findViewById<ImageView>(
-            androidx.appcompat.R.id.search_mag_icon
-        )
-        searchIcon.setColorFilter(Color.RED, PorterDuff.Mode.SRC_IN)  // đổi màu icon
-        val closeButton = searchView.findViewById<ImageView>(
-            androidx.appcompat.R.id.search_close_btn
-        )
-        closeButton.setColorFilter(Color.RED, PorterDuff.Mode.SRC_IN)  // đổi màu
         searchEditText.setHintTextColor(Color.LTGRAY)
+
+        val searchIcon = searchView.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
+        searchIcon.setColorFilter(Color.RED, PorterDuff.Mode.SRC_IN)
+
+        val closeButton =
+            searchView.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
+        closeButton.setColorFilter(Color.RED, PorterDuff.Mode.SRC_IN)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = LikeAdapter(mutableListOf(), { dismiss() }, listener)
+        adapter = FollowerAdapter(mutableListOf(), { dismiss() }, { user -> switchScreen(user) })
         binding.rcvMusic.layoutManager = LinearLayoutManager(context)
         binding.rcvMusic.adapter = adapter
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val result = repositoryPost.getUsersWhoLiked(postId = idPost)
+        // Fetch users song song
+        fetchUsers()
+
+        // Setup search
+        setupSearchView()
+    }
+
+    private fun fetchUsers() {
+        fetchScope.launch {
+            // Gọi getUserById song song
+            val deferredList = listId.map { uid ->
+                async {
+                    repositoryAuth.getUserById(uid).getOrNull()
+                }
+            }
+
+            val users = deferredList.awaitAll().filterNotNull()
+
             withContext(Dispatchers.Main) {
-                if (result.isNotEmpty()) {
-                    // nếu mà ko rỗng
-                    adapter.update(result)
+                if (users.isNotEmpty()) {
+                    listUser.clear()
+                    listUser.addAll(users)
+                    adapter.update(listUser)
                 } else {
                     binding.tvTitle3.visibility = View.VISIBLE
-                    binding.tvTitle4.visibility = View.VISIBLE
                 }
             }
         }
-
-        setupSearchView()
     }
 
     private fun setupSearchView() {
         val searchView = binding.btnSearchLike
-
-        // Lắng nghe sự kiện gõ chữ trong SearchView
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 adapter.filter(query.orEmpty())
@@ -123,5 +133,6 @@ class LikeBottomSheet(val idPost: String, val listener: OnAvatarClickListener?) 
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
+        fetchScope.cancel() // Hủy coroutine nếu bottom sheet bị đóng
     }
 }

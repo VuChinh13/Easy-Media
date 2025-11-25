@@ -52,15 +52,15 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <ImageView
-                    android:id="@+id/btn_heart"
-                    android:layout_width="23dp"
-                    android:layout_height="23dp"
-                    android:layout_marginRight="20dp"
-                    android:src="@drawable/ic_heart1"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@+id/btn_messenger"
-                    app:layout_constraintTop_toTopOf="parent" />
+                <!--                <ImageView-->
+                <!--                    android:id="@+id/btn_heart"-->
+                <!--                    android:layout_width="23dp"-->
+                <!--                    android:layout_height="23dp"-->
+                <!--                    android:layout_marginRight="20dp"-->
+                <!--                    android:src="@drawable/ic_heart1"-->
+                <!--                    app:layout_constraintBottom_toBottomOf="parent"-->
+                <!--                    app:layout_constraintEnd_toStartOf="@+id/btn_messenger"-->
+                <!--                    app:layout_constraintTop_toTopOf="parent" />-->
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.appbar.MaterialToolbar>
