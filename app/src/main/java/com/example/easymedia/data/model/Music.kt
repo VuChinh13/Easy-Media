@@ -9,5 +9,6 @@ data class Music(
     val artist: String = "",      // Tên nghệ sĩ
     val url: String = "",         // URL stream từ Cloudinary
     val publicId: String = "",    // Cloudinary Public ID
-    val duration: String = ""
+    val duration: String = "",
+    val image: String = ""
 ) : Parcelable

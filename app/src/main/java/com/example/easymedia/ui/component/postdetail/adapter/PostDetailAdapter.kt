@@ -79,6 +79,10 @@ class PostDetailAdapter(
     override fun onBindViewHolder(holder: PostViewHolder, position: Int) {
         val post = posts[position]
         with(holder) {
+            // ẩn đi icon more
+            if (user?.id != SharedPrefer.getId()) {
+                toolbar.visibility = View.GONE
+            }
             showShimmner(this)
             viewPager.adapter = ImagePagerAdapter(post.imageUrls)
             dotsIndicator.attachTo(viewPager)

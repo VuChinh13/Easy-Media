@@ -44,7 +44,7 @@
         app:layout_constraintBottom_toBottomOf="@+id/iv_update_infor"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/iv_update_infor"
-        app:srcCompat="@drawable/ic_menu_hamburger" />
+        app:srcCompat="@drawable/ic_logout" />
 
     <ImageView
         android:id="@+id/iv_update_infor"
@@ -95,7 +95,7 @@
         android:id="@+id/tv_introduce"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
+        android:layout_marginTop="5dp"
         android:layout_marginBottom="10dp"
         android:paddingLeft="0dp"
         android:textStyle="normal"
@@ -236,16 +236,58 @@
     <!--            android:src="@drawable/ic_add_people" />-->
     <!--    </androidx.cardview.widget.CardView>-->
 
+    <ImageView
+        android:id="@+id/iv_add_story"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginTop="10dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_add_story_3"
+        android:visibility="invisible"
+        app:layout_constraintStart_toStartOf="@+id/cardView"
+        app:layout_constraintTop_toBottomOf="@id/tv_introduce" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rcvStory"
+        android:layout_width="match_parent"
+        android:layout_height="110dp"
+        android:layout_marginTop="10dp"
+        android:background="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_introduce" />
+
+    <TextView
+        android:id="@+id/tv_title3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:text="Mới"
+        android:textSize="13sp"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="@+id/iv_add_story"
+        app:layout_constraintStart_toStartOf="@+id/iv_add_story"
+        app:layout_constraintTop_toBottomOf="@+id/iv_add_story" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tin của bạn"
+        android:textColor="@color/black"
+        android:textSize="15sp"
+        android:visibility="invisible"
+        app:layout_constraintLeft_toLeftOf="@id/tv_introduce"
+        app:layout_constraintTop_toBottomOf="@id/tv_introduce" />
+
 
     <View
         android:id="@+id/view1"
         android:layout_width="match_parent"
         android:layout_height="1.5px"
-        android:layout_marginTop="10dp"
         android:background="#e0e0e0"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_introduce" />
+        app:layout_constraintTop_toBottomOf="@id/tv_title3" />
 
 
     <androidx.recyclerview.widget.RecyclerView

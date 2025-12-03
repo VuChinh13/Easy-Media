@@ -20,7 +20,6 @@ dependencyResolutionManagement {
         maven {
             url = uri("https://repositories.tomtom.com/artifactory/maven")
         }
-        maven("https://dl.cloudsmith.io/public/cometchat/cometchat/maven/")
     }
 }
 

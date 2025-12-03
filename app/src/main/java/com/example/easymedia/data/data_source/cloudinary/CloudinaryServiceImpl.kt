@@ -9,9 +9,15 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONObject
 import java.io.File
 import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
 
 class CloudinaryServiceImpl(
-    private val httpClient: OkHttpClient = OkHttpClient()
+    private val httpClient: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)   // thời gian chờ kết nối
+        .writeTimeout(180, TimeUnit.SECONDS)    // thời gian upload (rất quan trọng)
+        .readTimeout(180, TimeUnit.SECONDS)     // thời gian chờ server phản hồi
+        .callTimeout(180, TimeUnit.SECONDS)     // tổng thời gian cho request
+        .build()
 ) : CloudinaryService {
 
     private val cloudName = "dsjsdyba7"
@@ -88,7 +94,9 @@ class CloudinaryServiceImpl(
             Log.d("CloudinaryService", "HTTP status: ${resp.code}")
 
             if (!resp.isSuccessful) {
+                val errBody = resp.body?.string()
                 Log.e("CloudinaryService", "Upload thất bại: ${resp.code} ${resp.message}")
+                Log.e("CloudinaryService", "Error body: $errBody")
                 error("Cloudinary video upload failed: ${resp.code} ${resp.message}")
             }
 

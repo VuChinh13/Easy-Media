@@ -59,38 +59,38 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-//    fun getAllStories() {
-//        viewModelScope.launch(Dispatchers.IO) {
-//            val result = storyRepository.getAllStories()
-//            if (result.isNotEmpty()) {
-//                _story.postValue(result)
-//            }
-//            Log.d("abcd", result.size.toString())
-//        }
-//    }
-
-
     fun getAllStories() {
         viewModelScope.launch(Dispatchers.IO) {
             val result = storyRepository.getAllStories()
-
-            // Thời gian hiện tại
-            val now = Date()
-
-            // Lọc story chưa hết hạn
-            val filteredStories = result.filter { story ->
-                story.expireAt?.after(now) == true
+            if (result.isNotEmpty()) {
+                _story.postValue(result)
             }
-
-            if (filteredStories.isNotEmpty()) {
-                _story.postValue(filteredStories)
-            } else {
-                _story.postValue(emptyList())
-            }
-
-            Log.d("Story_Filter", "Total: ${result.size}, Alive: ${filteredStories.size}")
+            Log.d("abcd", result.size.toString())
         }
     }
+
+
+//    fun getAllStories() {
+//        viewModelScope.launch(Dispatchers.IO) {
+//            val result = storyRepository.getAllStories()
+//
+//            // Thời gian hiện tại
+//            val now = Date()
+//
+//            // Lọc story chưa hết hạn
+//            val filteredStories = result.filter { story ->
+//                story.expireAt?.after(now) == true
+//            }
+//
+//            if (filteredStories.isNotEmpty()) {
+//                _story.postValue(filteredStories)
+//            } else {
+//                _story.postValue(emptyList())
+//            }
+//
+//            Log.d("Story_Filter", "Total: ${result.size}, Alive: ${filteredStories.size}")
+//        }
+//    }
 
     fun fetchNextPage() {
         if (isLoading || isLastPage || lastVisible == null) return

@@ -52,10 +52,6 @@ android {
 
 
 dependencies {
-    // CometChat UIKit
-    implementation("com.cometchat:chat-uikit-android:5.2.2")
-    // Optional: voice/video calling
-    implementation("com.cometchat:calls-sdk-android:4.3.1")
     implementation("com.tomtom.sdk.maps:map-display:1.26.3") {
         exclude(group = "com.google.protobuf", module = "protobuf-java")
     }

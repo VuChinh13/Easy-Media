@@ -60,6 +60,7 @@ class VideoRenderService : Service() {
         val blockH = intent?.getIntExtra(IntentExtras.EXTRA_BLOCK_H, 0) ?: 0
         val tx = intent?.getIntExtra(IntentExtras.EXTRA_TX, 0) ?: 0
         val ty = intent?.getIntExtra(IntentExtras.EXTRA_TY, 0) ?: 0
+        val isDownload = intent?.getBooleanExtra(IntentExtras.EXTRA_DOWNLOAD, false) ?: false
         val tw = intent?.getIntExtra(IntentExtras.EXTRA_TW, 0) ?: 0
         val th = intent?.getIntExtra(IntentExtras.EXTRA_TH, 0) ?: 0
         story = intent?.getParcelableExtra<Story>(IntentExtras.EXTRA_STORY)
@@ -96,7 +97,8 @@ class VideoRenderService : Service() {
                     isMuted,
                     musicSelected,
                     musicActualDurationMs,
-                    isMusicClipped
+                    isMusicClipped,
+                    isDownload
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Render failed", e)
@@ -148,7 +150,8 @@ class VideoRenderService : Service() {
         isMuted: Boolean,
         musicSelected: String,
         musicActualDurationMs: Long,
-        isMusicClipped: Boolean
+        isMusicClipped: Boolean,
+        isDownload: Boolean
     ) {
         try {
 
@@ -192,7 +195,8 @@ class VideoRenderService : Service() {
             val videoFilter =
                 "[0:v]scale=${tw}:${th}[sv];" +
                         "[sv]pad=${blockW}:${blockH}:${tx}:${ty}:color=0x00000000[bg];" +
-                        "[bg][1:v]overlay=0:0"
+                        "[bg][1:v]overlay=0:0[ov];" +
+                        "[ov]scale=720:-2[outv]"
 
             // -------------------------
             // 4) XỬ LÍ AUDIO LOGIC
@@ -236,10 +240,14 @@ class VideoRenderService : Service() {
             // 5) GHÉP VIDEO FILTER
             // -------------------------
             cmd += listOf("-filter_complex", videoFilter)
+            cmd += listOf("-map", "[outv]")
 
             cmd += listOf("-c:v", "libx264")
             cmd += listOf("-preset", "ultrafast")
             cmd += listOf("-crf", "20")
+            cmd += listOf("-b:v", "8000k")
+            cmd += listOf("-maxrate", "8000k")
+            cmd += listOf("-bufsize", "12000k")
 
             // audio mapping
             if (audioMapping.isNotEmpty()) {
@@ -250,7 +258,7 @@ class VideoRenderService : Service() {
                 cmd += audioCodec.split(" ")
             }
 
-            // -------------------------
+            // -------------------------a
             // 6) GIỚI HẠN VIDEO 60 GIÂY
             // -------------------------
             val maxDurationSec = 60
@@ -294,8 +302,11 @@ class VideoRenderService : Service() {
                 if (ReturnCode.isSuccess(returnCode)) {
                     Log.d(TAG, "FFmpeg success: ${outputVideo.absolutePath}")
 
-                    val savedUri = saveVideoToPublic(outputVideo)
-                    Log.d(TAG, "Saved to gallery: $savedUri")
+                    // nếu mà là true thì lưu video
+                    if (isDownload) {
+                        val savedUri = saveVideoToPublic(outputVideo)
+                        Log.d(TAG, "Saved to gallery: $savedUri")
+                    }
 
                     // upload story
                     story?.let { st ->

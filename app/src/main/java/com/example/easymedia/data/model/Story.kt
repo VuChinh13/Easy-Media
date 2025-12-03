@@ -35,9 +35,8 @@ data class Story(
     @get:PropertyName("expire_at") @set:PropertyName("expire_at")
     var expireAt: Date? = null,
 
-    // 🔹 Danh sách ID người đã xem
-    // lưu id người mà xem mình thôi á
-    var viewers: List<String> = emptyList(),
+    @get:PropertyName("thumbnail_url") @set:PropertyName("thumbnail_url")
+    var thumbnailUrl: String = "",
 
     @get:PropertyName("duration_ms") @set:PropertyName("duration_ms")
     var durationMs: Long = 0L

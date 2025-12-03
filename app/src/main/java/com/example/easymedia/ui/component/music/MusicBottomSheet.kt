@@ -12,6 +12,7 @@ import android.widget.AutoCompleteTextView
 import android.widget.ImageView
 import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
 import com.example.easymedia.R
 import com.example.easymedia.data.model.Music
 import com.example.easymedia.databinding.MusicBottomsheetBinding
@@ -147,6 +148,8 @@ class MusicBottomSheet(
         mediaPlayer = null
 
         currentMusic = music
+        Glide.with(requireContext()).load(music.image).error(R.drawable.ic_music_default)
+            .into(binding.ivMusicPlaying)
         mediaPlayer = MediaPlayer().apply {
             setDataSource(music.url)
             setOnPreparedListener {

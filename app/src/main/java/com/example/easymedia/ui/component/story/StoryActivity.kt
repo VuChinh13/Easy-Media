@@ -25,7 +25,6 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
-import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.view.inputmethod.InputMethodManager
@@ -67,6 +66,7 @@ import gun0912.tedimagepicker.builder.type.MediaType
 import java.io.File
 import java.io.FileOutputStream
 import androidx.core.view.isVisible
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 
 class StoryActivity : AppCompatActivity() {
     private lateinit var player: ExoPlayer
@@ -74,6 +74,7 @@ class StoryActivity : AppCompatActivity() {
     private val overlayInfo = TextOverlayInfo()
     private val overlayInfoMusic = TextOverlayInfo()
     private var success = false
+    private var isDownload = false
     private var musicActualDurationMs: Long = 0L
     private lateinit var binding: ActivityStoryBinding
     private lateinit var musicPlayer: ExoPlayer   // Player riêng cho nhạc nền (optional)
@@ -143,10 +144,7 @@ class StoryActivity : AppCompatActivity() {
                 Toast.makeText(this, "Tin của bạn đang được đăng", Toast.LENGTH_SHORT)
                     .show()
                 binding.blockImage.post {
-                    imgService.captureAndUpload(
-                        binding.blockImage,
-                        story
-                    ) {
+                    imgService.captureAndUpload(binding.blockImage, story, isDownload) {
                         Toast.makeText(this, "Đăng tin thất bại!", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -209,6 +207,7 @@ class StoryActivity : AppCompatActivity() {
                             putExtra(IntentExtras.EXTRA_BLOCK_W, blockW)
                             putExtra(IntentExtras.EXTRA_BLOCK_H, blockH)
                             putExtra(IntentExtras.EXTRA_TX, tx)
+                            putExtra(IntentExtras.EXTRA_DOWNLOAD, isDownload)
                             putExtra(IntentExtras.EXTRA_TY, ty)
                             putExtra(IntentExtras.EXTRA_TW, tw)
                             putExtra(IntentExtras.EXTRA_TH, th)
@@ -241,6 +240,16 @@ class StoryActivity : AppCompatActivity() {
                         e.printStackTrace()
                     }
                 }
+            }
+        }
+
+        // Sự kiện download
+        binding.btnDownload.setOnClickListener {
+            isDownload = !isDownload  // đảo trạng thái
+            if (isDownload) {
+                binding.btnDownload.setImageResource(R.drawable.ic_download)
+            } else {
+                binding.btnDownload.setImageResource(R.drawable.ic_download_disable)
             }
         }
 
@@ -631,7 +640,7 @@ class StoryActivity : AppCompatActivity() {
         binding.btnAddText.visibility = View.INVISIBLE
         binding.btnSound.visibility = View.INVISIBLE
         binding.btnMusic.visibility = View.INVISIBLE
-        binding.btnMore.visibility = View.INVISIBLE
+        binding.btnDownload.visibility = View.INVISIBLE
         binding.btnFinish.visibility = View.VISIBLE
         binding.blockButton.visibility = View.VISIBLE
 
@@ -658,7 +667,7 @@ class StoryActivity : AppCompatActivity() {
             binding.btnSound.visibility = View.VISIBLE
         }
         binding.btnMusic.visibility = View.VISIBLE
-        binding.btnMore.visibility = View.VISIBLE
+        binding.btnDownload.visibility = View.VISIBLE
         binding.blockButton.visibility = View.GONE
         binding.blockText.visibility = View.GONE
         binding.blockColor.visibility = View.GONE
@@ -674,13 +683,18 @@ class StoryActivity : AppCompatActivity() {
     private fun finishChooseMusic(music: Music?) {
         musicSelected = music
 
-        // ❗ Tắt tiếng video
-        player.volume = 0f
-        isMuted = true
-        binding.btnSound.setImageResource(R.drawable.ic_sound_off)
+        // An toàn với video: nếu có player thì mute
+        if (::player.isInitialized) {
+            player.volume = 0f
+            isMuted = true
+            binding.btnSound.setImageResource(R.drawable.ic_sound_off)
+        }
 
-        // Clear nhạc cũ
-        musicPlayer.release()
+        // An toàn với musicPlayer cũ
+        if (::musicPlayer.isInitialized) {
+            musicPlayer.stop()
+            musicPlayer.release()
+        }
 
         music?.url?.let { url ->
 
@@ -695,7 +709,8 @@ class StoryActivity : AppCompatActivity() {
                 override fun onPlaybackStateChanged(state: Int) {
                     if (state == Player.STATE_READY) {
 
-                        val videoDuration = player.duration
+                        val videoDuration =
+                            if (::player.isInitialized) player.duration else rawMusicPlayer.duration
                         val musicDuration = rawMusicPlayer.duration
 
                         // 🔹 Cập nhật musicActualDurationMs
@@ -730,8 +745,11 @@ class StoryActivity : AppCompatActivity() {
                         // Trường hợp B: Nhạc ngắn hơn video → chạy 1 lần, KHÔNG LẶP
                         else {
                             musicPlayer = rawMusicPlayer.apply {
-                                repeatMode = Player.REPEAT_MODE_OFF
+                                repeatMode =
+                                    if (::player.isInitialized) Player.REPEAT_MODE_OFF   // Nếu là video → không lặp
+                                    else Player.REPEAT_MODE_ALL                          // Nếu là ảnh → lặp lại
                                 playWhenReady = true
+                                volume = 1f
                             }
                         }
                     }
@@ -739,9 +757,14 @@ class StoryActivity : AppCompatActivity() {
             })
         }
 
-        binding.blockMusic.visibility = View.VISIBLE
+        Glide.with(this)
+            .load(music?.image)
+            .transform(RoundedCorners(8)) // bo 10px, có thể chuyển dp -> px
+            .error(R.drawable.ic_music_default)
+            .into(binding.ivMusic)
         binding.tvArtist.text = music?.artist
         binding.tvTitle.text = music?.title
+        binding.blockMusic.visibility = View.VISIBLE
     }
 
 

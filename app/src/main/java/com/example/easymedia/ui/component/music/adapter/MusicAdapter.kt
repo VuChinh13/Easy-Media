@@ -9,6 +9,8 @@ import com.example.easymedia.data.model.Music
 import com.example.easymedia.databinding.ItemMusicBinding
 import java.text.Normalizer
 import androidx.core.graphics.toColorInt
+import com.bumptech.glide.Glide
+import com.example.easymedia.R
 
 class MusicAdapter(
     private val originalList: MutableList<Music>,
@@ -34,6 +36,9 @@ class MusicAdapter(
         holder.binding.tvTitle.text = music.title
         holder.binding.tvArtist.text = music.artist
         holder.binding.tvDuration.text = music.duration
+        Glide.with(holder.itemView.context).load(music.image).error(R.drawable.ic_music_default)
+            .into(holder.binding.ivMusic)
+
 
         // 👇 Đổi màu nền nếu là item được chọn
         if (position == selectedPosition) {

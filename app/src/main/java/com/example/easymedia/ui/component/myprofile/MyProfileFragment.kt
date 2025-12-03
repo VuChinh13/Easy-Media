@@ -13,9 +13,11 @@ import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.easymedia.R
 import com.example.easymedia.data.model.Post
+import com.example.easymedia.data.model.Story
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.FragmentMyProfileBinding
 import com.example.easymedia.ui.component.addpost.AddPostFragment
@@ -30,6 +32,8 @@ import com.example.easymedia.ui.component.updateinformation.UpdateInformationFra
 import com.example.easymedia.ui.component.utils.IntentExtras
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import com.example.easymedia.ui.component.following.FollowingBottomSheet
+import com.example.easymedia.ui.component.myprofile.adapter.MyStoryAdapter
+import com.example.easymedia.ui.component.viewstory.ViewStoryActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class MyProfileFragment : Fragment() {
@@ -37,6 +41,7 @@ class MyProfileFragment : Fragment() {
     private val myProfileViewModel: MyProfileViewModel by viewModels()
     private var inforUserResponse: User? = null
     private lateinit var myPostAdapter: MyPostAdapter
+    private lateinit var myStoryAdapter: MyStoryAdapter
     private var listPost = mutableListOf<Post>()
     private val uid = SharedPrefer.getId()
 
@@ -72,11 +77,16 @@ class MyProfileFragment : Fragment() {
         SharedPrefer.updateContext(requireContext())
         myProfileViewModel.getInforUser(uid)
         myProfileViewModel.getUserPosts(uid)
+        myProfileViewModel.getStory(uid)
         myPostAdapter =
             MyPostAdapter(mutableListOf()) { user, position ->
                 switchScreen(user, position)
             }
 
+        myStoryAdapter =
+            MyStoryAdapter(mutableListOf()) { list ->
+                switchScreenStory(list)
+            }
 
         // Chuyển sang chỉnh sửa Profile
         binding.ivUpdateInfor.setOnClickListener {
@@ -133,13 +143,22 @@ class MyProfileFragment : Fragment() {
             )
         }
 
+        myProfileViewModel.getStoryResult.observe(viewLifecycleOwner) { result ->
+            myStoryAdapter.updateListStory(result)
+            binding.rcvStory.layoutManager =
+                LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+            binding.rcvStory.adapter = myStoryAdapter
+        }
+
         myProfileViewModel.getUserPostsResult.observe(viewLifecycleOwner) { result ->
             if (result.isEmpty()) {
+                binding.rvMyPost.visibility = View.GONE
                 binding.tvTitle1.visibility = View.VISIBLE
                 binding.tvTitle2.visibility = View.VISIBLE
                 binding.btnCreatePost.visibility = View.VISIBLE
                 (activity as MainActivity).hideLoading()
             } else {
+                binding.rvMyPost.visibility = View.VISIBLE
                 binding.tvTitle1.visibility = View.GONE
                 binding.tvTitle2.visibility = View.GONE
                 binding.btnCreatePost.visibility = View.GONE
@@ -237,6 +256,13 @@ class MyProfileFragment : Fragment() {
         transaction.addToBackStack(null)
         transaction.commit()
     }
+
+    fun switchScreenStory(listStory: List<Story>) {
+        val intent = Intent(requireActivity(), ViewStoryActivity::class.java)
+        intent.putParcelableArrayListExtra(IntentExtras.EXTRA_DATA_STORY, ArrayList(listStory))
+        startActivity(intent)
+    }
+
 
 //    override fun onResume() {
 //        super.onResume()

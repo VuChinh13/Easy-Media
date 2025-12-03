@@ -33,8 +33,8 @@ interface StoryService {
      * @return List<Story>
      */
     suspend fun getAllStories(): List<Story>
-
     suspend fun deleteStory(storyId: String): Boolean
+    suspend fun getStoriesByUser(userId: String): List<Story>
 }
 
 class FirebaseStoryService(
@@ -55,12 +55,14 @@ class FirebaseStoryService(
                 val url = doc.getString("url") ?: ""
                 val duration = doc.getString("duration") ?: ""
                 val publicId = doc.getString("publicId") ?: ""
+                val image = doc.getString("image") ?: ""
                 Music(
                     title = title,
                     artist = artist,
                     url = url,
                     publicId = publicId,
-                    duration = duration
+                    duration = duration,
+                    image = image
                 )
             }
 
@@ -96,7 +98,7 @@ class FirebaseStoryService(
                 "user_id" to story.userId,
                 "image_url" to result.secureUrl,
                 "expire_at" to Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000),
-                "viewers" to story.viewers,
+                if (isVideo) "thumbnail_url" to generateVideoThumbnail(result.secureUrl) else "thumbnail_url" to result.secureUrl,
                 "created_at" to FieldValue.serverTimestamp(),
                 "duration_ms" to story.durationMs
             )
@@ -157,6 +159,13 @@ class FirebaseStoryService(
                 emptyList()
             }
         }
+    }
+
+    fun generateVideoThumbnail(videoUrl: String): String {
+        if (videoUrl.isBlank()) return videoUrl
+        if (!videoUrl.contains("/video/upload/")) return videoUrl
+        return videoUrl.replace("/upload/", "/upload/so_0,f_jpg,w_500,h_900,c_fill/")
+            .replace(".mp4", ".jpg")
     }
 
     override suspend fun deleteStory(storyId: String): Boolean {
@@ -223,6 +232,56 @@ class FirebaseStoryService(
                 lower.endsWith(".mov") ||
                 lower.endsWith(".mkv") ||
                 lower.endsWith(".avi")
+    }
+
+    override suspend fun getStoriesByUser(userId: String): List<Story> {
+        Log.d("FirebaseStoryService", "Fetching stories for user: $userId")
+
+        return try {
+            // 🔹 Query chuẩn: lọc theo user_id + sắp xếp theo created_at (DESC)
+            val snapshot = db.collection("stories")
+                .whereEqualTo("user_id", userId)
+                .orderBy("created_at", Query.Direction.DESCENDING)
+                .orderBy(FieldPath.documentId(), Query.Direction.DESCENDING)
+                .get()
+                .await()
+
+            val stories = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Story::class.java)?.copy(id = doc.id)
+            }
+
+            Log.d("FirebaseStoryService", "Fetched ${stories.size} stories for user $userId")
+            stories
+
+        } catch (e: Exception) {
+            Log.w(
+                "FirebaseStoryService",
+                "Ordered fetch failed for user $userId → fallback: ${e.message}",
+                e
+            )
+
+            // 🔹 Fallback: chỉ where + tự sort theo createdAt
+            return try {
+                val snapshot = db.collection("stories")
+                    .whereEqualTo("user_id", userId)
+                    .get()
+                    .await()
+
+                snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Story::class.java)?.copy(id = doc.id)
+                }
+                    // 🔥 Tự sort để đảm bảo UI vẫn đúng
+                    .sortedByDescending { it.createdAt }
+
+            } catch (inner: Exception) {
+                Log.e(
+                    "FirebaseStoryService",
+                    "Failed to fetch user stories: ${inner.message}",
+                    inner
+                )
+                emptyList()
+            }
+        }
     }
 
 }

@@ -43,6 +43,7 @@
         android:layout_height="30dp"
         android:layout_marginLeft="20dp"
         android:layout_marginTop="15dp"
+        android:layout_marginRight="20dp"
         android:background="@drawable/bg_button_myprofile"
         android:ellipsize="end"
         android:maxLines="1"
@@ -52,27 +53,27 @@
         android:textColor="@color/black"
         android:textSize="15sp"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toLeftOf="@id/btn_message"
+        app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_introduce" />
 
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_message"
-        android:layout_width="0dp"
-        android:layout_height="30dp"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="20dp"
-        android:background="@drawable/bg_button_myprofile"
-        android:maxLines="1"
-        android:padding="5dp"
-        android:text="Nhắn tin"
-        android:textAllCaps="false"
-        android:textColor="@color/black"
-        android:textSize="15sp"
-        app:layout_constraintBottom_toBottomOf="@id/btn_follow"
-        app:layout_constraintLeft_toRightOf="@id/btn_follow"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="@id/btn_follow" />
+    <!--    <androidx.appcompat.widget.AppCompatButton-->
+    <!--        android:id="@+id/btn_message"-->
+    <!--        android:layout_width="0dp"-->
+    <!--        android:layout_height="30dp"-->
+    <!--        android:layout_marginLeft="10dp"-->
+    <!--        android:layout_marginRight="20dp"-->
+    <!--        android:background="@drawable/bg_button_myprofile"-->
+    <!--        android:maxLines="1"-->
+    <!--        android:padding="5dp"-->
+    <!--        android:text="Nhắn tin"-->
+    <!--        android:textAllCaps="false"-->
+    <!--        android:textColor="@color/black"-->
+    <!--        android:textSize="15sp"-->
+    <!--        app:layout_constraintBottom_toBottomOf="@id/btn_follow"-->
+    <!--        app:layout_constraintLeft_toRightOf="@id/btn_follow"-->
+    <!--        app:layout_constraintRight_toRightOf="parent"-->
+    <!--        app:layout_constraintTop_toTopOf="@id/btn_follow" />-->
 
     <TextView
         android:id="@+id/tv_introduce"

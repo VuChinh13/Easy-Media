@@ -72,10 +72,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_round_white2"
-            android:paddingLeft="7dp"
-            android:paddingTop="7dp"
+            android:paddingLeft="5dp"
+            android:paddingTop="5dp"
             android:paddingRight="10dp"
-            android:paddingBottom="7dp"
+            android:paddingBottom="5dp"
             android:visibility="invisible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -85,14 +85,13 @@
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivMusic"
-                android:layout_width="35dp"
-                android:layout_height="35dp"
+                android:layout_width="37dp"
+                android:layout_height="37dp"
                 android:scaleType="centerCrop"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:shapeAppearanceOverlay="@style/RoundedImageShape"
-                app:srcCompat="@drawable/ic_music_default" />
+                app:shapeAppearanceOverlay="@style/RoundedImageShape" />
 
             <TextView
                 android:id="@+id/tvTitle"
@@ -187,12 +186,12 @@
             android:scaleType="fitXY"
             android:src="@drawable/ic_music"
             app:layout_constraintLeft_toRightOf="@id/btnAddText"
-            app:layout_constraintRight_toLeftOf="@id/btnMore"
+            app:layout_constraintRight_toLeftOf="@id/btnDownload"
             app:layout_constraintTop_toTopOf="parent" />
 
 
         <androidx.appcompat.widget.AppCompatImageView
-            android:id="@+id/btnMore"
+            android:id="@+id/btnDownload"
             android:layout_width="44dp"
             android:layout_height="44dp"
             android:layout_marginLeft="10dp"
@@ -200,7 +199,7 @@
             android:elevation="0dp"
             android:padding="2dp"
             android:scaleType="fitXY"
-            android:src="@drawable/ic_more"
+            android:src="@drawable/ic_download_disable"
             app:layout_constraintLeft_toRightOf="@id/btnMusic"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
