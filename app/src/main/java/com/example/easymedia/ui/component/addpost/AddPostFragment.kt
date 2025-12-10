@@ -134,7 +134,6 @@ class AddPostFragment : Fragment() {
                     postImages
                 )
             }
-
         }
 
         // handle button back

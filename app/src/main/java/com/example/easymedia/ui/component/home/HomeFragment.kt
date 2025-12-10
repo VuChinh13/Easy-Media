@@ -38,11 +38,6 @@ import com.example.easymedia.ui.component.utils.IntentExtras
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import com.example.easymedia.ui.component.viewstory.ViewStoryActivity
 
-/**
- * Xử lí việc phân trang
- *  - Hiển thị chỉ hiển thị hết các bài viết như bình thường nếu mà người mình theo dõi thì
- *    hiển thị trước
- */
 class HomeFragment : Fragment(), OnAvatarClickListener {
     private lateinit var binding: FragmentHomeBinding
     private val homeViewModel: HomeViewModel by viewModels()
@@ -67,8 +62,6 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
     val launcherStory = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result: ActivityResult ->
-
-
         if (result.resultCode == RESULT_OK) {
             val data = result.data
             val user = data?.getParcelableExtra<User>(IntentExtras.EXTRA_USER)
@@ -126,14 +119,16 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         // Quan sát dữ liệu bài viết
         homeViewModel.posts.observe(viewLifecycleOwner) { data ->
             (activity as MainActivity).hideLoading()
-            // cần 1 biến để check xem là có phải là đang load lại không ấy
+            // Biến để check xem là có phải là đang load lại không
             if (reload) {
+                // load mới
                 postAdapter.updateData(data.first)
                 reload = false
             } else {
+                // không load mới chỉ thêm dữ liệu
                 if (data.first.isNotEmpty()) {
                     // Gộp bài viết mới và bài viết cũ
-                    postAdapter.addPosts(data.first) // 👈 chỉ thêm mới, không replace
+                    postAdapter.addPosts(data.first)
                 } else {
                     Toast.makeText(
                         requireContext(),
@@ -173,9 +168,10 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
             }
         }
 
-        // 🔹 Refresh để load lại
+        // Sự kiện Refresh load lại bài viết + story
         binding.swipeRefresh.setOnRefreshListener {
             homeViewModel.refresh()
+            homeViewModel.getAllStories()
         }
 
         // hiển thị giao diện Story

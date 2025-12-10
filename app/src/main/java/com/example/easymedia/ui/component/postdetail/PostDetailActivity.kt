@@ -23,7 +23,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-
 // Class này sẽ nhận 1 tham số là index -> vị trí click bên Fragment khác
 // hiển thị đúng với vị trí index đó
 @Suppress("DEPRECATION")

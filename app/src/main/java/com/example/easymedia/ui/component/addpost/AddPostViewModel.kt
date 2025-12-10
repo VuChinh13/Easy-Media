@@ -32,7 +32,6 @@ class AddPostViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             val result = repo.createPostWithCloudinary(userId, caption, location, imageFiles)
             result.onSuccess {
-                // không cần quan tâm id bài viết trả về
                 _result.postValue(true to "")
             }.onFailure { e ->
                 Log.d("CheckLoi", e.toString())

@@ -29,10 +29,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class ProfileFragment : Fragment() {
-
     private lateinit var binding: FragmentProfileBinding
     private val myProfileViewModel: ProfileViewModel by viewModels()
     private lateinit var postAdapter: ProfileAdapter
+    val currentUserId = SharedPrefer.getId()
 
     // Repository
     private val authRepository =
@@ -57,13 +57,6 @@ class ProfileFragment : Fragment() {
             return
         }
 
-        // Lấy ID của mình (đang đăng nhập)
-        val currentUserId = SharedPrefer.getId()
-        if (currentUserId == null) {
-            Toast.makeText(requireContext(), "Bạn chưa đăng nhập", Toast.LENGTH_SHORT).show()
-            return
-        }
-
         // gọi load posts
         myProfileViewModel.getUserPosts(user.id)
 
@@ -82,10 +75,6 @@ class ProfileFragment : Fragment() {
             .load(user.profilePicture)
             .error(R.drawable.ic_avatar)
             .into(binding.ivAvatar)
-
-        // ================================
-        // FOLLOW / UNFOLLOW
-        // ================================
 
         // Cho phép thay đổi trạng thái follow
         var isFollowing = user.followers.contains(currentUserId)
@@ -114,46 +103,24 @@ class ProfileFragment : Fragment() {
                 try {
                     if (isFollowing) {
                         // UNFOLLOW
-                        val result = withContext(Dispatchers.IO) {
+                        isFollowing = false
+                        user.followers = user.followers.filter { it != currentUserId }
+                        updateFollowUI()
+                        withContext(Dispatchers.IO) {
                             authRepository.removeFollowing(currentUserId, user.id)
-                        }
-
-                        result.onSuccess {
-                            // update local followers
-                            user.followers = user.followers.filter { it != currentUserId }
-                            isFollowing = false
-                            Toast.makeText(requireContext(), "Đã huỷ theo dõi", Toast.LENGTH_SHORT)
-                                .show()
-                        }.onFailure {
-                            Toast.makeText(
-                                requireContext(),
-                                "Lỗi: ${it.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
                         }
 
                     } else {
                         // FOLLOW
-                        val result = withContext(Dispatchers.IO) {
+                        isFollowing = true
+                        user.followers = user.followers.toMutableList().apply {
+                            add(currentUserId)
+                        }
+                        updateFollowUI()
+                        withContext(Dispatchers.IO) {
                             authRepository.addFollowing(currentUserId, user.id)
                         }
-
-                        result.onSuccess {
-                            user.followers = user.followers + currentUserId
-                            isFollowing = true
-                            Toast.makeText(requireContext(), "Đã theo dõi", Toast.LENGTH_SHORT)
-                                .show()
-                        }.onFailure {
-                            Toast.makeText(
-                                requireContext(),
-                                "Lỗi: ${it.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
                     }
-
-                    updateFollowUI()
-
                 } catch (e: Exception) {
                     Toast.makeText(requireContext(), "Lỗi: ${e.message}", Toast.LENGTH_LONG).show()
                 } finally {

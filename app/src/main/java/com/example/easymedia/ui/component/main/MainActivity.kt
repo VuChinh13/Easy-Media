@@ -94,8 +94,7 @@ class MainActivity : AppCompatActivity() {
         binding.bottomBar.visibility = View.VISIBLE
     }
 
-    // Clear tất cả và chỉ đề lại 1 cái đầu tiên thôi
-    // cập nhật cả nhữn biến mà liên quan nữa
+    // Clear tất cả và chỉ đề lại 1 cái đầu tiên
     fun clearBackStackExceptFirst() {
         fragmentCurrent = "HomeFragment"
         fragmentPre = "HomeFragment"

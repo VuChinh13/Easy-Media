@@ -33,6 +33,7 @@ import com.example.easymedia.ui.component.utils.IntentExtras
 import com.example.easymedia.ui.component.utils.SharedPrefer
 import com.example.easymedia.ui.component.following.FollowingBottomSheet
 import com.example.easymedia.ui.component.myprofile.adapter.MyStoryAdapter
+import com.example.easymedia.ui.component.story.StoryActivity
 import com.example.easymedia.ui.component.viewstory.ViewStoryActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
@@ -55,6 +56,19 @@ class MyProfileFragment : Fragment() {
                 // true có nghĩa là cập nhật cần load lại
                 myProfileViewModel.getInforUser(uid)
                 myProfileViewModel.getUserPosts(uid)
+            }
+        }
+    }
+
+    private val launcherStory = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result: ActivityResult ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data
+            val isSucceeds = data?.getBooleanExtra(IntentExtras.RESULT_DATA, false)
+            // xử lí khi mà thành công
+            if (isSucceeds == true) {
+                myProfileViewModel.getStory(uid)
             }
         }
     }
@@ -125,29 +139,43 @@ class MyProfileFragment : Fragment() {
                 switchProfile(user)
             }
             followingSheet.show(
-                parentFragmentManager, // hoặc childFragmentManager
+                parentFragmentManager,
                 "FollowingBottomSheet"
             )
         }
 
         binding.tvTotalFollowers.setOnClickListener {
             val followingSheet = FollowerBottomSheet(
-                myProfileViewModel.getInforUserResult.value?.followers ?: listOf(),
-                { user ->
-                    switchProfile(user)
-                }
-            )
+                myProfileViewModel.getInforUserResult.value?.followers ?: listOf()
+            ) { user ->
+                switchProfile(user)
+            }
             followingSheet.show(
-                parentFragmentManager, // hoặc childFragmentManager
+                parentFragmentManager,
                 "FollowerBottomSheet"
             )
         }
 
+
+        // Lấy danh sách Story
         myProfileViewModel.getStoryResult.observe(viewLifecycleOwner) { result ->
-            myStoryAdapter.updateListStory(result)
-            binding.rcvStory.layoutManager =
-                LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
-            binding.rcvStory.adapter = myStoryAdapter
+            (activity as MainActivity).hideLoading()
+            if (result.isNotEmpty()) {
+                myStoryAdapter.updateListStory(result)
+                binding.rcvStory.layoutManager =
+                    LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+                binding.rcvStory.adapter = myStoryAdapter
+                binding.rcvStory.visibility = View.VISIBLE
+            } else {
+                binding.rcvStory.visibility = View.INVISIBLE
+                binding.ivAddStory.visibility = View.VISIBLE
+                binding.tvTitle3.visibility = View.VISIBLE
+            }
+        }
+
+        binding.ivAddStory.setOnClickListener {
+            val intent = Intent(requireActivity(), StoryActivity::class.java)
+            launcher.launch(intent)
         }
 
         myProfileViewModel.getUserPostsResult.observe(viewLifecycleOwner) { result ->
@@ -156,14 +184,12 @@ class MyProfileFragment : Fragment() {
                 binding.tvTitle1.visibility = View.VISIBLE
                 binding.tvTitle2.visibility = View.VISIBLE
                 binding.btnCreatePost.visibility = View.VISIBLE
-                (activity as MainActivity).hideLoading()
             } else {
                 binding.rvMyPost.visibility = View.VISIBLE
                 binding.tvTitle1.visibility = View.GONE
                 binding.tvTitle2.visibility = View.GONE
                 binding.btnCreatePost.visibility = View.GONE
                 listPost.addAll(result)
-                (activity as MainActivity).hideLoading()
                 myPostAdapter.updateListPost(result)
                 binding.rvMyPost.layoutManager = GridLayoutManager(requireContext(), 3)
                 binding.rvMyPost.adapter = myPostAdapter
@@ -260,17 +286,8 @@ class MyProfileFragment : Fragment() {
     fun switchScreenStory(listStory: List<Story>) {
         val intent = Intent(requireActivity(), ViewStoryActivity::class.java)
         intent.putParcelableArrayListExtra(IntentExtras.EXTRA_DATA_STORY, ArrayList(listStory))
-        startActivity(intent)
+        launcherStory.launch(intent)
     }
-
-
-//    override fun onResume() {
-//        super.onResume()
-//        SharedPrefer.updateContext(requireContext())
-//        val userName = SharedPrefer.getUserName()
-//        myProfileViewModel.getInforUser(userName)
-//        myProfileViewModel.getUserPosts(userName)
-//    }
 }
 
 

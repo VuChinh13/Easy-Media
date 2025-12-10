@@ -151,7 +151,7 @@ class StoryActivity : AppCompatActivity() {
                 finish()
             } else {
                 // nếu mà là video
-                Toast.makeText(this@StoryActivity, "Đang xử lí video", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@StoryActivity, "Đang xử lí video", Toast.LENGTH_SHORT).show()
                 binding.btnSharedStory.visibility = View.GONE
                 if (::musicPlayer.isInitialized) {
                     musicPlayer.stop()
@@ -984,10 +984,6 @@ class StoryActivity : AppCompatActivity() {
 }
 
 data class TextOverlayInfo(
-    var text: String = "",
     var posX: Float = 0f,
-    var posY: Float = 0f,
-    var textSize: Float = 22f,
-    var textColor: String = "white", // FFmpeg dùng màu string
-    var fontPath: String = ""        // nếu cần custom font
+    var posY: Float = 0f
 )

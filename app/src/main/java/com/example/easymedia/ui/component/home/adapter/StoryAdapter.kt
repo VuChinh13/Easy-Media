@@ -89,11 +89,12 @@ class StoryAdapter(
                     .error(R.drawable.ic_avatar)
                     .apply(RequestOptions().diskCacheStrategy(DiskCacheStrategy.ALL))
                     .into(ivStory)
+
+                // sự kiện chuyển màn hình
                 btnAddStory.setOnClickListener {
-                    Log.d("ok", "ok day chu")
-                    // chuyển màn hình
                     listenerStory.onStoryClick()
                 }
+
                 // nếu mà có story của mình -> xem được
                 if (myStory) {
                     itemView.setOnClickListener {

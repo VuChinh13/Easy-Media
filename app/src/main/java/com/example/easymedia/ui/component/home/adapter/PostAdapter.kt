@@ -134,7 +134,6 @@ class PostAdapter(
                 val result = authRepository.getUserById(post.userId)
                 result.onSuccess { user ->
                     withContext(Dispatchers.Main) {
-//                        user = it
                         with(holder) {
                             username.text = user?.username
                             Glide.with(itemView.context)
@@ -270,16 +269,6 @@ class PostAdapter(
         }
     }
 
-//    @SuppressLint("NotifyDataSetChanged")
-//    fun updateData(newPosts: List<Post>) {
-//        val diffCallback = PostDiffCallback(posts, newPosts)
-//        val diffResult = DiffUtil.calculateDiff(diffCallback)
-//
-//        posts = newPosts.toMutableList()
-//        diffResult.dispatchUpdatesTo(this)
-//    }
-
-    // 👉 Hàm custom để cập nhật dữ liệu và gọi notifyDataSetChanged
     @SuppressLint("NotifyDataSetChanged")
     fun updateData(newItems: List<Post>) {
         posts.clear()

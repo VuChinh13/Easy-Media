@@ -91,14 +91,14 @@ class ViewStoryActivity : AppCompatActivity() {
 
         initPlayer()
 
-        // Kiểm tra xem liệu là có phải là Story của mình không nếu mà là Story của mình thì mới là có thể mà là xóa được á
+        // Kiểm tra xem liệu là có phải là Story của mình không
         if (userId == listStory[0].userId) {
             binding.tbMenu.visibility = View.VISIBLE
             binding.tbMenu.inflateMenu(R.menu.menu_item_story)
             binding.tbMenu.overflowIcon?.setTint(Color.WHITE)
         }
 
-        //Sự kiện xóa tym
+        //Sự kiện xóa tin
         binding.tbMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.menu_delete_story -> {
