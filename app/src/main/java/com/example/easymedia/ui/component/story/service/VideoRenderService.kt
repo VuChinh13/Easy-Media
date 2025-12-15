@@ -258,7 +258,7 @@ class VideoRenderService : Service() {
                 cmd += audioCodec.split(" ")
             }
 
-            // -------------------------a
+            // -------------------------
             // 6) GIỚI HẠN VIDEO 60 GIÂY
             // -------------------------
             val maxDurationSec = 60
