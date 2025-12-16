@@ -15,7 +15,7 @@ import com.example.easymedia.data.model.User
 import com.example.easymedia.data.repository.PostRepositoryImpl
 import com.example.easymedia.databinding.ActivityUpdatePostBinding
 import com.example.easymedia.ui.component.updatepost.adapter.UpdateProfileImagePagerAdapter
-import com.example.easymedia.ui.component.utils.IntentExtras
+import com.example.easymedia.ui.utils.IntentExtras
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

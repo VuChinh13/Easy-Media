@@ -1,4 +1,4 @@
-package com.example.easymedia.ui.component.utils
+package com.example.easymedia.ui.utils
 
 import android.annotation.SuppressLint
 import android.content.Context

@@ -2,7 +2,7 @@ package com.example.easymedia.ui.component.search
 
 import android.content.Context
 import com.example.easymedia.data.model.User
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.SharedPrefer
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import androidx.core.content.edit

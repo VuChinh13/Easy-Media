@@ -8,7 +8,7 @@ import com.bumptech.glide.Glide
 import com.example.easymedia.R
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.ItemLikeBottomSheetBinding
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.SharedPrefer
 import java.text.Normalizer
 
 class FollowingAdapter(

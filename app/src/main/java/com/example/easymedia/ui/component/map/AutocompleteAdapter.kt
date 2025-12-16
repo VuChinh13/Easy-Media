@@ -1,6 +1,7 @@
 // file: AutocompleteAdapter.kt
 package com.example.easymedia.ui.component.map
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +16,7 @@ class AutocompleteAdapter(
     private val onClick: (DisplayItem) -> Unit
 ) : RecyclerView.Adapter<AutocompleteAdapter.ViewHolder>() {
 
+    @SuppressLint("NotifyDataSetChanged")
     fun updateData(newItems: List<DisplayItem>) {
         items = newItems
         notifyDataSetChanged()

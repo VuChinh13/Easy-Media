@@ -1,23 +1,17 @@
 package com.example.easymedia.ui.component.search.adapter
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.bumptech.glide.Priority
 import com.example.easymedia.R
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.ItemSuggestionBinding
-import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation.setSlideAnimations
 import com.example.easymedia.ui.component.main.MainActivity
-import com.example.easymedia.ui.component.profile.ProfileFragment
-import com.example.easymedia.ui.component.utils.IntentExtras
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.SharedPrefer
 
 // Nhận vào bên trong đó là danh sách lịch sử tìm kiếm
 class HistoryAdapter(

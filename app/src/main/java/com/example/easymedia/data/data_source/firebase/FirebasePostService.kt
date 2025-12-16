@@ -22,7 +22,6 @@ import kotlinx.coroutines.tasks.await
 import java.io.File
 
 interface PostService {
-    // Tạo post từ URL ảnh có sẵn
     suspend fun createPost(
         userId: String,
         caption: String,
@@ -417,9 +416,6 @@ class FirebasePostService(
         Log.d(tag, "removeImageUrls = $removeImageUrls")
         Log.d(tag, "newCaption = $newCaption")
 
-        // ========================
-        // 1️⃣ XỬ LÝ XOÁ ẢNH (NẾU CÓ)
-        // ========================
 
         // Chuyển URL → publicId (trùng nhau đoạn "posts/xxxxx")
         val removePublicIds = removeImageUrls.mapNotNull { url ->
@@ -443,9 +439,7 @@ class FirebasePostService(
             return
         }
 
-        // ========================
-        // 2️⃣ XOÁ ẢNH TRÊN CLOUDINARY
-        // ========================
+        // xóa ảnh trên Cloudinary
         if (removePublicIds.isNotEmpty()) {
             coroutineScope {
                 removePublicIds.forEach { publicId ->
@@ -462,9 +456,7 @@ class FirebasePostService(
             }
         }
 
-        // ========================
-        // 3️⃣ TẠO POST MỚI SAU KHI CHỈNH SỬA
-        // ========================
+        // Tạo Post sau khi mà chỉnh sửa
         val updatedPost = existingPost.copy(
             caption = newCaption ?: existingPost.caption,
             imageUrls = newImageUrls,
@@ -473,9 +465,7 @@ class FirebasePostService(
 
         Log.d(tag, "🆕 updatedPost = $updatedPost")
 
-        // ========================
-        // 4️⃣ LƯU LÊN FIRESTORE
-        // ========================
+        // lưu lên trên Firestore
         try {
             db.runBatch { batch ->
                 batch.set(postRef, updatedPost)
@@ -487,6 +477,4 @@ class FirebasePostService(
             Log.e(tag, "❌ Firestore update FAILED → ${e.message}")
         }
     }
-
-
 }

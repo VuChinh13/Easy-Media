@@ -17,7 +17,7 @@ import com.bumptech.glide.request.transition.Transition
 import com.example.easymedia.R
 import com.example.easymedia.data.model.Post
 import com.example.easymedia.databinding.ActivityMapDetailBinding
-import com.example.easymedia.ui.component.utils.IntentExtras
+import com.example.easymedia.ui.utils.IntentExtras
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.map.display.TomTomMap
 import com.tomtom.sdk.map.display.camera.CameraOptions
@@ -31,7 +31,6 @@ import androidx.core.graphics.scale
 class MapDetailActivity : AppCompatActivity(), MapReadyCallback {
     private lateinit var tomTomMap: TomTomMap
     private lateinit var binding: ActivityMapDetailBinding
-
     private var lat = 0.0
     private var lng = 0.0
     private var name = ""

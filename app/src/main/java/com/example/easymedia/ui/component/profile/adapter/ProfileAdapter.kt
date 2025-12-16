@@ -11,7 +11,7 @@ import com.example.easymedia.data.model.Post
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.ItemMyPostBinding
 import com.example.easymedia.ui.component.postdetail.PostDetailActivity
-import com.example.easymedia.ui.component.utils.IntentExtras
+import com.example.easymedia.ui.utils.IntentExtras
 
 class ProfileAdapter(
     private val context: Context,

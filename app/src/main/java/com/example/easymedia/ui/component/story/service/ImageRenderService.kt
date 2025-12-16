@@ -16,7 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import androidx.core.graphics.createBitmap
-import com.example.easymedia.ui.component.utils.IntentExtras
+import com.example.easymedia.ui.utils.IntentExtras
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream

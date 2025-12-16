@@ -29,8 +29,8 @@ import com.example.easymedia.ui.component.postdetail.PostDetailActivity
 import com.example.easymedia.ui.component.profile.ProfileFragment
 import com.example.easymedia.ui.component.splash.SplashActivity
 import com.example.easymedia.ui.component.updateinformation.UpdateInformationFragment
-import com.example.easymedia.ui.component.utils.IntentExtras
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.IntentExtras
+import com.example.easymedia.ui.utils.SharedPrefer
 import com.example.easymedia.ui.component.following.FollowingBottomSheet
 import com.example.easymedia.ui.component.myprofile.adapter.MyStoryAdapter
 import com.example.easymedia.ui.component.story.StoryActivity

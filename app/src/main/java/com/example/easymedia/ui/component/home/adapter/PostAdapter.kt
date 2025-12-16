@@ -28,8 +28,8 @@ import com.example.easymedia.databinding.ItemFirstPostBinding
 import com.example.easymedia.databinding.ItemPostBinding
 import com.example.easymedia.ui.component.comment.CommentBottomSheet
 import com.example.easymedia.ui.component.home.OnAvatarClickListener
-import com.example.easymedia.ui.component.utils.SharedPrefer
-import com.example.easymedia.ui.component.utils.TimeFormatter
+import com.example.easymedia.ui.utils.SharedPrefer
+import com.example.easymedia.ui.utils.TimeFormatter
 import com.example.easymedia.ui.component.like.LikeBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

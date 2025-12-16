@@ -12,7 +12,6 @@ import androidx.core.widget.addTextChangedListener
 import com.example.easymedia.databinding.ActivityAuthBinding
 import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.signup.SignupActivity
-import com.example.easymedia.ui.component.utils.AppToast
 
 class AuthActivity : AppCompatActivity() {
 

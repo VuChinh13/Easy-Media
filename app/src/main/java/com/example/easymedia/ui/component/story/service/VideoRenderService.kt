@@ -24,7 +24,7 @@ import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
 import com.example.easymedia.data.data_source.firebase.FirebaseStoryService
 import com.example.easymedia.data.model.Story
 import com.example.easymedia.data.repository.StoryRepositoryImpl
-import com.example.easymedia.ui.component.utils.IntentExtras
+import com.example.easymedia.ui.utils.IntentExtras
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

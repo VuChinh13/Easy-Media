@@ -19,8 +19,8 @@ import com.example.easymedia.data.repository.AuthRepository
 import com.example.easymedia.data.repository.AuthRepositoryImpl
 import com.example.easymedia.databinding.FragmentUpdateInformationBinding
 import com.example.easymedia.ui.component.main.MainActivity
-import com.example.easymedia.ui.component.utils.IntentExtras
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.IntentExtras
+import com.example.easymedia.ui.utils.SharedPrefer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

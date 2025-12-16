@@ -31,9 +31,9 @@ import com.example.easymedia.data.model.Music
 import com.example.easymedia.data.model.Story
 import com.example.easymedia.data.repository.StoryRepositoryImpl
 import com.example.easymedia.databinding.ActivityViewStoryBinding
-import com.example.easymedia.ui.component.utils.IntentExtras
-import com.example.easymedia.ui.component.utils.SharedPrefer
-import com.example.easymedia.ui.component.utils.TimeFormatter
+import com.example.easymedia.ui.utils.IntentExtras
+import com.example.easymedia.ui.utils.SharedPrefer
+import com.example.easymedia.ui.utils.TimeFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

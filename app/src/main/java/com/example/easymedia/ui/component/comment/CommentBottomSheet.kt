@@ -2,7 +2,6 @@ package com.example.easymedia.ui.component.comment
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -22,7 +21,7 @@ import com.example.easymedia.data.repository.PostRepositoryImpl
 import com.example.easymedia.databinding.CommentBottomsheetBinding
 import com.example.easymedia.ui.component.comment.adapter.CommentAdapter
 import com.example.easymedia.ui.component.home.OnAvatarClickListener
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.SharedPrefer
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment

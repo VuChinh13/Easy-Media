@@ -20,8 +20,8 @@ import com.example.easymedia.data.model.Location
 import com.example.easymedia.databinding.FragmentAddPostBinding
 import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.map.MapStoryActivity
-import com.example.easymedia.ui.component.utils.IntentExtras
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.IntentExtras
+import com.example.easymedia.ui.utils.SharedPrefer
 import java.io.File
 import java.io.FileOutputStream
 

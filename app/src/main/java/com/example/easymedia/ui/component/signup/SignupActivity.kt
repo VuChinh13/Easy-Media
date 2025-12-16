@@ -8,7 +8,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import com.example.easymedia.databinding.ActivitySignupBinding
-import com.example.easymedia.ui.component.utils.AppToast
 
 @Suppress("DEPRECATION")
 class SignupActivity : AppCompatActivity() {

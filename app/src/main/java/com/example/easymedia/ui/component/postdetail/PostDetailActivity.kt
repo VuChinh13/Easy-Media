@@ -18,7 +18,7 @@ import com.example.easymedia.databinding.ActivityPostDetailBinding
 import com.example.easymedia.ui.component.mapdetail.MapDetailActivity
 import com.example.easymedia.ui.component.postdetail.adapter.PostDetailAdapter
 import com.example.easymedia.ui.component.updatepost.UpdatePostActivity
-import com.example.easymedia.ui.component.utils.IntentExtras
+import com.example.easymedia.ui.utils.IntentExtras
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

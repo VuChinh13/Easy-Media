@@ -21,8 +21,8 @@ import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation
 import com.example.easymedia.ui.component.follower.FollowerBottomSheet
 import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.profile.adapter.ProfileAdapter
-import com.example.easymedia.ui.component.utils.IntentExtras
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.IntentExtras
+import com.example.easymedia.ui.utils.SharedPrefer
 import com.example.easymedia.ui.component.following.FollowingBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

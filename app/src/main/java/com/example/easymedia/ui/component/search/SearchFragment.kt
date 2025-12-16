@@ -18,14 +18,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.easymedia.R
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.FragmentSearchBinding
-import com.example.easymedia.ui.component.animation.FragmentTransactionAnimation.setSlideAnimations
 import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.profile.ProfileFragment
 import com.example.easymedia.ui.component.search.adapter.HistoryAdapter
 import com.example.easymedia.ui.component.search.adapter.SearchAutoCompleteAdapter
-import com.example.easymedia.ui.component.utils.IntentExtras
-import com.example.easymedia.ui.component.utils.SharedPrefer
-import com.google.android.play.integrity.internal.ac
+import com.example.easymedia.ui.utils.IntentExtras
+import com.example.easymedia.ui.utils.SharedPrefer
 
 class SearchFragment : Fragment() {
     private lateinit var binding: FragmentSearchBinding

@@ -34,8 +34,8 @@ import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.mapdetail.MapDetailActivity
 import com.example.easymedia.ui.component.profile.ProfileFragment
 import com.example.easymedia.ui.component.story.StoryActivity
-import com.example.easymedia.ui.component.utils.IntentExtras
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.IntentExtras
+import com.example.easymedia.ui.utils.SharedPrefer
 import com.example.easymedia.ui.component.viewstory.ViewStoryActivity
 
 class HomeFragment : Fragment(), OnAvatarClickListener {

@@ -12,13 +12,12 @@ import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
 import com.example.easymedia.data.data_source.firebase.FirebaseAuthService
 import com.example.easymedia.data.data_source.firebase.FirebasePostService
 import com.example.easymedia.data.model.Comment
-import com.example.easymedia.data.model.Post
 import com.example.easymedia.data.repository.AuthRepositoryImpl
 import com.example.easymedia.data.repository.PostRepositoryImpl
 import com.example.easymedia.databinding.ItemCommentBinding
 import com.example.easymedia.ui.component.home.OnAvatarClickListener
-import com.example.easymedia.ui.component.utils.SharedPrefer
-import com.example.easymedia.ui.component.utils.TimeFormatter
+import com.example.easymedia.ui.utils.SharedPrefer
+import com.example.easymedia.ui.utils.TimeFormatter
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -19,7 +19,7 @@ import com.example.easymedia.data.repository.AuthRepositoryImpl
 import com.example.easymedia.databinding.ItemFirstStoryBinding
 import com.example.easymedia.databinding.StoryItemBinding
 import com.example.easymedia.ui.component.home.OnAvatarClickListener
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.SharedPrefer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.easymedia.R
 import com.example.easymedia.ui.component.auth.AuthActivity
 import com.example.easymedia.ui.component.main.MainActivity
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.SharedPrefer
 
 @SuppressLint("CustomSplashScreen")
 class SplashActivity : AppCompatActivity() {

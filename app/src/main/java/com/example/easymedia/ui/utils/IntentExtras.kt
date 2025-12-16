@@ -1,4 +1,4 @@
-package com.example.easymedia.ui.component.utils
+package com.example.easymedia.ui.utils
 
 /*
  * Định nghĩa các hằng số dùng cho Intent
@@ -30,5 +30,4 @@ object IntentExtras {
     const val EXTRA_MUSIC = "extra_music"
     const val EXTRA_DURATION_MUSIC = "extra_duration_music"
     const val EXTRA_MUSIC_CLIPPED = "extra_music_clipped"
-
 }

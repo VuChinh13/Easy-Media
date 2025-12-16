@@ -19,7 +19,6 @@ class CloudinaryServiceImpl(
         .callTimeout(180, TimeUnit.SECONDS)     // tổng thời gian cho request
         .build()
 ) : CloudinaryService {
-
     private val cloudName = "dsjsdyba7"
     private val unsignedPreset = "unsigned_preset"
     private val apiKey = "471914241374597"

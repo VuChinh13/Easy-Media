@@ -9,10 +9,9 @@ import com.example.easymedia.data.data_source.firebase.FirebaseAuthService
 import com.example.easymedia.data.repository.AuthRepository
 import com.example.easymedia.data.repository.AuthRepositoryImpl
 import com.example.easymedia.data.repository.AuthError
-import com.example.easymedia.ui.component.utils.SharedPrefer
+import com.example.easymedia.ui.utils.SharedPrefer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class AuthViewModel(
     private val repo: AuthRepository = AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
