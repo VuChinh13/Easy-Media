@@ -28,7 +28,6 @@ class FollowerBottomSheet(
     private val listId: List<String>,
     private val switchScreen: (User) -> Unit
 ) : BottomSheetDialogFragment() {
-
     private lateinit var binding: FollowerBottomSheetBinding
     private val repositoryAuth = AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
     private val listUser = mutableListOf<User>()

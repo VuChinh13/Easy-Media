@@ -1,12 +1,12 @@
 package com.example.easymedia.ui.component.story.service
 
+import android.R
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.ContentValues
-import android.content.Context
 import android.content.Intent
 import android.media.MediaMetadataRetriever
 import android.net.Uri
@@ -17,9 +17,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.antonkarpenko.ffmpegkit.FFmpegKit
 import com.antonkarpenko.ffmpegkit.FFmpegKitConfig
-import com.antonkarpenko.ffmpegkit.LogCallback
 import com.antonkarpenko.ffmpegkit.ReturnCode
-import com.antonkarpenko.ffmpegkit.StatisticsCallback
 import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
 import com.example.easymedia.data.data_source.firebase.FirebaseStoryService
 import com.example.easymedia.data.model.Story
@@ -34,11 +32,12 @@ import java.io.FileOutputStream
 import java.net.URL
 
 class VideoRenderService : Service() {
-
     private val NOTIFICATION_ID = 1001
     private val CHANNEL_ID = "video_render_channel"
     private val TAG = "VideoRenderService"
-    private lateinit var notificationManager: NotificationManager
+    private val notificationManager by lazy {
+        getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    }
     private val storyRepository =
         StoryRepositoryImpl(FirebaseStoryService(cloudinary = CloudinaryServiceImpl()))
 
@@ -48,7 +47,6 @@ class VideoRenderService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
     }
 
@@ -64,7 +62,7 @@ class VideoRenderService : Service() {
         val tw = intent?.getIntExtra(IntentExtras.EXTRA_TW, 0) ?: 0
         val th = intent?.getIntExtra(IntentExtras.EXTRA_TH, 0) ?: 0
         story = intent?.getParcelableExtra<Story>(IntentExtras.EXTRA_STORY)
-        val durationMs = intent?.getLongExtra(IntentExtras.EXTRA_DURATION_MS, 0L) ?: 0L
+        val durationMs: Long = intent?.getLongExtra(IntentExtras.EXTRA_DURATION_MS, 0L) ?: 0L
 
 
         val isMuted = intent?.getBooleanExtra(IntentExtras.EXTRA_MUTED, false) ?: false
@@ -113,26 +111,17 @@ class VideoRenderService : Service() {
 
     private fun createNotification(progress: Int): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Đang xử lý video...")
-            .setContentText(if (progress == 0) "Chuẩn bị..." else "Progress: $progress%")
-            .setSmallIcon(android.R.drawable.ic_media_play)
-            .setProgress(100, progress, false)
-            .setOnlyAlertOnce(true)
+            .setSmallIcon(com.example.easymedia.R.drawable.img_logo)
+            .setContentText("Thông báo về tin của bạn")
+            .setContentTitle("Story mới")
+            .setAutoCancel(true) // tab vào notification thì tự biến mất
             .build()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Video Render",
-                NotificationManager.IMPORTANCE_HIGH   // CHỈNH Ở ĐÂY
-            ).apply {
-                description = "Notification for video rendering"
-                enableLights(true)
-                enableVibration(true)
-            }
-
+            val channel =
+                NotificationChannel("story", "Thông báo Story", NotificationManager.IMPORTANCE_HIGH)
             notificationManager.createNotificationChannel(channel)
         }
     }
@@ -277,21 +266,21 @@ class VideoRenderService : Service() {
             // -------------------------
             Log.d(TAG, "FFmpeg CMD:\n${cmd.joinToString(" ")}")
 
-            FFmpegKitConfig.enableLogCallback(LogCallback { log ->
+            FFmpegKitConfig.enableLogCallback { log ->
                 Log.d(TAG, "FFmpegLog: ${log.message}")
-            })
+            }
 
-            FFmpegKitConfig.enableStatisticsCallback(StatisticsCallback { stats ->
+            FFmpegKitConfig.enableStatisticsCallback { stats ->
                 val timeMs = stats.time
                 if (durationMs > 0) {
                     val percent =
-                        ((timeMs.toDouble() / durationMs.toDouble()) * 100).toInt().coerceIn(0, 100)
+                        ((timeMs / durationMs.toDouble()) * 100).toInt().coerceIn(0, 100)
                     notificationManager.notify(
                         NOTIFICATION_ID,
                         createNotification(percent)
                     )
                 }
-            })
+            }
 
             // -------------------------
             // 7) RUN FFmpeg
@@ -316,15 +305,15 @@ class VideoRenderService : Service() {
                                 val result = storyRepository.uploadStory(st, outputVideo, true)
 
                                 if (result) {
-                                    val notif = NotificationCompat.Builder(
+                                    val notificationFinish = NotificationCompat.Builder(
                                         this@VideoRenderService,
                                         CHANNEL_ID
                                     )
                                         .setContentTitle("Tin đang được đăng")
                                         .setContentText("Xử lý xong.")
-                                        .setSmallIcon(android.R.drawable.ic_media_play)
+                                        .setSmallIcon(R.drawable.ic_media_play)
                                         .build()
-                                    notificationManager.notify(NOTIFICATION_ID, notif)
+                                    notificationManager.notify(NOTIFICATION_ID, notificationFinish)
 
                                     val intent = Intent("com.example.easymedia.UPLOAD_DONE")
                                     intent.putExtra(IntentExtras.RESULT_DATA_STR, true)
@@ -343,7 +332,7 @@ class VideoRenderService : Service() {
                     val err = NotificationCompat.Builder(this, CHANNEL_ID)
                         .setContentTitle("Lỗi xử lý video")
                         .setContentText("Vui lòng thử lại.")
-                        .setSmallIcon(android.R.drawable.stat_notify_error)
+                        .setSmallIcon(R.drawable.stat_notify_error)
                         .build()
 
                     notificationManager.notify(NOTIFICATION_ID, err)
@@ -395,7 +384,6 @@ class VideoRenderService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-
         // FFmpegKit Anton bản 2.1.0 KHÔNG có hàm disable → chỉ có cách set null
         FFmpegKitConfig.enableStatisticsCallback(null)
         FFmpegKitConfig.enableLogCallback(null)

@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import kotlin.math.min
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
@@ -29,13 +28,16 @@ import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.toColorInt
+import androidx.core.view.isVisible
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
@@ -46,6 +48,7 @@ import androidx.media3.exoplayer.source.ClippingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.palette.graphics.Palette
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.example.easymedia.R
@@ -61,14 +64,26 @@ import com.example.easymedia.ui.component.story.service.ImageRenderService
 import com.example.easymedia.ui.component.story.service.VideoRenderService
 import com.example.easymedia.ui.utils.IntentExtras
 import com.example.easymedia.ui.utils.SharedPrefer
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import gun0912.tedimagepicker.builder.TedImagePicker
 import gun0912.tedimagepicker.builder.type.MediaType
 import java.io.File
 import java.io.FileOutputStream
-import androidx.core.view.isVisible
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import kotlin.math.min
 
 class StoryActivity : AppCompatActivity() {
+    private val requestNotificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+         // cần xử lí chỗ này nếu mà đồng ý thì call hàm chuyển sang bên Service
+        if (isGranted){
+
+        } else {
+
+        }
+        isPermissionGranted = isGranted
+    }
+    private var isPermissionGranted = false
     private lateinit var player: ExoPlayer
     private val storyViewModel: StoryViewModel by viewModels()
     private val overlayInfo = TextOverlayInfo()
@@ -105,6 +120,7 @@ class StoryActivity : AppCompatActivity() {
         binding = ActivityStoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+
         // khởi tạo musicPlayer mặc định để tránh crash
         musicPlayer = ExoPlayer.Builder(this).build()
         shakeAnim = AnimationUtils.loadAnimation(this, R.anim.shake)
@@ -124,120 +140,110 @@ class StoryActivity : AppCompatActivity() {
             }
         }
 
-        // ----- Click listener ngắn gọn (gọi từ UI) -----
+        // Đăng tin
         binding.btnSharedStory.setOnClickListener {
-
-            // nếu mà là ảnh
-            if (isSelectedImage) {
-                if (::musicPlayer.isInitialized) {
-                    musicPlayer.stop()
-                    musicPlayer.release()
-                }
-                binding.btnSharedStory.visibility = View.GONE
-                // Tạo đối tượng Story
-                val userId = SharedPrefer.getId()
-                val story = Story(
-                    userId = userId, music = musicSelected, durationMs = parseTimeToMillis(
-                        musicSelected?.duration ?: "0:07"
-                    )
-                )
-                Toast.makeText(this, "Tin của bạn đang được đăng", Toast.LENGTH_SHORT)
-                    .show()
-                binding.blockImage.post {
-                    imgService.captureAndUpload(binding.blockImage, story, isDownload) {
-                        Toast.makeText(this, "Đăng tin thất bại!", Toast.LENGTH_SHORT).show()
+            if (requestNotificationPermissionIfNeeded()) {
+                // nếu mà là ảnh
+                if (isSelectedImage) {
+                    if (::musicPlayer.isInitialized) {
+                        musicPlayer.stop()
+                        musicPlayer.release()
                     }
-                }
-                finish()
-            } else {
-                // nếu mà là video
-                Toast.makeText(this@StoryActivity, "Đang xử lí video", Toast.LENGTH_SHORT).show()
-                binding.btnSharedStory.visibility = View.GONE
-                if (::musicPlayer.isInitialized) {
-                    musicPlayer.stop()
-                    musicPlayer.release()
-                }
-
-                // đảm bảo view đã layout
-                binding.blockImage.post {
-                    try {
-                        // 1) tạo overlay bitmap (sử dụng hàm bạn có)
-                        val overlayBitmap = createOverlayWithHole(
-                            binding.blockImage,
-                            binding.videoTexture,
-                            binding.etEditableText,
-                            binding.blockMusic
+                    binding.btnSharedStory.visibility = View.GONE
+                    // Tạo đối tượng Story
+                    val userId = SharedPrefer.getId()
+                    val story = Story(
+                        userId = userId, music = musicSelected, durationMs = parseTimeToMillis(
+                            musicSelected?.duration ?: "0:07"
                         )
-                        val overlayFile = saveOverlayBitmapToFile(
-                            this,
-                            overlayBitmap,
-                            "overlay_tmp_${System.currentTimeMillis()}.png"
-                        )
+                    )
+                    Toast.makeText(this, "Tin của bạn đang được đăng", Toast.LENGTH_SHORT)
+                        .show()
+                    binding.blockImage.post {
+                        imgService.captureAndUpload(binding.blockImage, story, isDownload) {
+                            Toast.makeText(this, "Đăng tin thất bại!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    finish()
+                } else {
+                    // nếu mà là video
+                    Toast.makeText(this@StoryActivity, "Đang xử lí video", Toast.LENGTH_SHORT)
+                        .show()
+                    binding.btnSharedStory.visibility = View.GONE
+                    if (::musicPlayer.isInitialized) {
+                        musicPlayer.stop()
+                        musicPlayer.release()
+                    }
 
-                        // 2) tính các kích thước & vị trí
-                        val blockW = binding.blockImage.width
-                        val blockH = binding.blockImage.height
-
-                        // IMPORTANT: lấy vị trí và kích thước thực tế của videoTexture *trong blockImage*
-                        // nếu texture nằm trực tiếp bên trong blockImage và không có translation parent, thì:
-                        val tx = binding.videoTexture.left
-                        val ty = binding.videoTexture.top
-                        val tw = binding.videoTexture.width
-                        val th = binding.videoTexture.height
-
-                        // 3) duration video
-                        val retriever = MediaMetadataRetriever()
-                        retriever.setDataSource(this, selectedUri)
-                        val durStr =
-                            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-                        val durationMs = durStr?.toLongOrNull() ?: 0L
-                        retriever.release()
-
-                        val userId = SharedPrefer.getId()
-                        val story =
-                            Story(userId = userId, music = musicSelected, durationMs = durationMs)
-
-                        // 4) start service
-                        val intent = Intent(this, VideoRenderService::class.java).apply {
-                            putExtra(IntentExtras.EXTRA_VIDEO_URI, selectedUri)
-                            putExtra(
-                                IntentExtras.EXTRA_OVERLAY_PATH,
-                                overlayFile.absolutePath
+                    binding.blockImage.post {
+                        try {
+                            // 1) tạo overlay bitmap (sử dụng hàm bạn có)
+                            val overlayBitmap = createOverlayWithHole(
+                                binding.blockImage,
+                                binding.videoTexture,
+                                binding.etEditableText,
+                                binding.blockMusic
                             )
-                            putExtra(IntentExtras.EXTRA_BLOCK_W, blockW)
-                            putExtra(IntentExtras.EXTRA_BLOCK_H, blockH)
-                            putExtra(IntentExtras.EXTRA_TX, tx)
-                            putExtra(IntentExtras.EXTRA_DOWNLOAD, isDownload)
-                            putExtra(IntentExtras.EXTRA_TY, ty)
-                            putExtra(IntentExtras.EXTRA_TW, tw)
-                            putExtra(IntentExtras.EXTRA_TH, th)
-                            putExtra(IntentExtras.EXTRA_DURATION_MS, durationMs)
-                            putExtra(IntentExtras.EXTRA_STORY, story)
-                            putExtra(IntentExtras.EXTRA_MUTED, isMuted)
-                            putExtra(IntentExtras.EXTRA_MUSIC, musicSelected?.url)
-                            putExtra(IntentExtras.EXTRA_DURATION_MUSIC, musicActualDurationMs)
-                            putExtra(IntentExtras.EXTRA_MUSIC_CLIPPED, isMusicClipped)
-                        }
+                            val overlayFile = saveOverlayBitmapToFile(
+                                this,
+                                overlayBitmap,
+                                "overlay_tmp_${System.currentTimeMillis()}.png"
+                            )
 
-                        // 🔹 1. Kiểm tra và xin quyền thông báo (Android 13+)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                                != PackageManager.PERMISSION_GRANTED
-                            ) {
-                                requestPermissions(
-                                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                                    1001
+                            // 2) tính các kích thước & vị trí
+                            val blockW = binding.blockImage.width
+                            val blockH = binding.blockImage.height
+
+                            // IMPORTANT: lấy vị trí và kích thước thực tế của videoTexture *trong blockImage*
+                            // nếu texture nằm trực tiếp bên trong blockImage và không có translation parent, thì:
+                            val tx = binding.videoTexture.left
+                            val ty = binding.videoTexture.top
+                            val tw = binding.videoTexture.width
+                            val th = binding.videoTexture.height
+
+                            // 3) duration video
+                            val retriever = MediaMetadataRetriever()
+                            retriever.setDataSource(this, selectedUri)
+                            val durStr =
+                                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                            val durationMs = durStr?.toLongOrNull() ?: 0L
+                            retriever.release()
+
+                            val userId = SharedPrefer.getId()
+                            val story =
+                                Story(
+                                    userId = userId,
+                                    music = musicSelected,
+                                    durationMs = durationMs
                                 )
-                                return@post
+
+                            // 4) start service
+                            val intent = Intent(this, VideoRenderService::class.java).apply {
+                                putExtra(IntentExtras.EXTRA_VIDEO_URI, selectedUri)
+                                putExtra(
+                                    IntentExtras.EXTRA_OVERLAY_PATH,
+                                    overlayFile.absolutePath
+                                )
+                                putExtra(IntentExtras.EXTRA_BLOCK_W, blockW)
+                                putExtra(IntentExtras.EXTRA_BLOCK_H, blockH)
+                                putExtra(IntentExtras.EXTRA_TX, tx)
+                                putExtra(IntentExtras.EXTRA_DOWNLOAD, isDownload)
+                                putExtra(IntentExtras.EXTRA_TY, ty)
+                                putExtra(IntentExtras.EXTRA_TW, tw)
+                                putExtra(IntentExtras.EXTRA_TH, th)
+                                putExtra(IntentExtras.EXTRA_DURATION_MS, durationMs)
+                                putExtra(IntentExtras.EXTRA_STORY, story)
+                                putExtra(IntentExtras.EXTRA_MUTED, isMuted)
+                                putExtra(IntentExtras.EXTRA_MUSIC, musicSelected?.url)
+                                putExtra(IntentExtras.EXTRA_DURATION_MUSIC, musicActualDurationMs)
+                                putExtra(IntentExtras.EXTRA_MUSIC_CLIPPED, isMusicClipped)
                             }
+
+                            startForegroundService(intent)
+                            finish()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-                        startForegroundService(intent)
-
-                        // kết thúc luôn Activity
-                        finish()
-
-                    } catch (e: Exception) {
-                        e.printStackTrace()
                     }
                 }
             }
@@ -253,7 +259,8 @@ class StoryActivity : AppCompatActivity() {
             }
         }
 
-        storyViewModel.finish.observe(this) {
+        storyViewModel.finish.observe(this)
+        {
             if (it) {
                 binding.loading.visibility = View.GONE
                 val resultIntent = intent
@@ -263,6 +270,44 @@ class StoryActivity : AppCompatActivity() {
                 finish()
             }
         }
+    }
+
+    private fun requestNotificationPermissionIfNeeded(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            // Android < 13 -> không cần xin quyền chuyển luôn sang bên Service
+            return true
+        }
+        when {
+            (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED) -> {
+                // đã có quyền
+                return true
+            }
+
+            shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
+                // Áp dụng cho việc mà từ chối 1 lần thôi -> giải thích
+                return showPermissionRationaleDialog()
+            }
+
+            else -> return false
+        }
+    }
+
+    private fun showPermissionRationaleDialog(): Boolean {
+        MaterialAlertDialogBuilder(this, R.style.MyAlertDialogTheme)
+            .setTitle("Quyền thông báo")
+            .setMessage("Ứng dụng cần quyền thông báo để gửi thông thông tin Story")
+            .setPositiveButton("Cho phép") { _, _ ->
+                requestNotificationPermissionLauncher.launch(
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
+            }
+            .setNegativeButton("Hủy", null)
+            .show()
+
+        return isPermissionGranted
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -439,7 +484,7 @@ class StoryActivity : AppCompatActivity() {
             changeBackgroundText(textStyleSelected)
         }
 
-        // sự kiện chọn màua
+        // sự kiện chọn màu
         binding.btnTextTiltNeon.setOnClickListener {
             changeBackgroundText2(textStyleSelected)
             textStyleSelected = "tiltneon"
@@ -587,7 +632,7 @@ class StoryActivity : AppCompatActivity() {
 
         player.prepare()
 
-        // ⭐ Loop video theo logic 60 giây + check isMuted ⭐
+        // Loop video theo logic 60 giây + check isMuted
         val maxLoopDurationMs = 60_000L
         val handler = Handler(Looper.getMainLooper())
 
@@ -655,7 +700,6 @@ class StoryActivity : AppCompatActivity() {
         val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(binding.etEditableText, InputMethodManager.SHOW_IMPLICIT)
 
-//        binding.blockColor.visibility = View.VISIBLE
         binding.blockText.visibility = View.VISIBLE
     }
 

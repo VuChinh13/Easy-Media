@@ -58,7 +58,7 @@ class FollowerAdapter(
         }
     }
 
-    /** 🔍 Lọc theo tên, bỏ dấu tiếng Việt */
+    /**  Lọc theo tên, bỏ dấu tiếng Việt */
     @SuppressLint("NotifyDataSetChanged")
     fun filter(query: String) {
         val normalizedQuery = removeVietnameseAccents(query).lowercase()
@@ -75,7 +75,7 @@ class FollowerAdapter(
         }
 
         selectedPosition = RecyclerView.NO_POSITION
-        notifyDataSetChanged() // Cập nhật giao diện
+        notifyDataSetChanged()
     }
 
     private fun removeVietnameseAccents(str: String): String {
@@ -97,6 +97,5 @@ class FollowerAdapter(
         notifyDataSetChanged()
     }
 
-    // SỬA LỖI: Trả về size của filteredList
     override fun getItemCount(): Int = filteredList.size
 }
