@@ -19,7 +19,6 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@id/view1" />
 
-    <!-- 🌟 Áp shimmer cho username -->
     <com.facebook.shimmer.ShimmerFrameLayout
         android:id="@+id/shimmerUsername"
         android:layout_width="match_parent"

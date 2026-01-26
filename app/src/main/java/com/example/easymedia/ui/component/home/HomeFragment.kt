@@ -51,7 +51,6 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         if (result.resultCode == RESULT_OK) {
             val data = result.data
             val isSucceeds = data?.getBooleanExtra(IntentExtras.RESULT_DATA, false)
-            // xử lí khi mà thành công
             if (isSucceeds == true) {
                 homeViewModel.getAllStories()
             }
@@ -76,7 +75,6 @@ class HomeFragment : Fragment(), OnAvatarClickListener {
         }
     }
 
-    // Nhận sự kiện đăng Story bằng Video
     private val uploadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val result = intent?.getBooleanExtra(IntentExtras.RESULT_DATA_STR, false)

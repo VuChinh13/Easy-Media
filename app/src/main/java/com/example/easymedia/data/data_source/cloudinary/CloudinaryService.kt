@@ -10,7 +10,7 @@ data class CloudinaryUploadResult(
 interface CloudinaryService {
     suspend fun uploadImage(
         imageFile: File,
-        folder: String = "posts" // mặc định dùng folder 'posts'
+        folder: String = "posts"
     ): CloudinaryUploadResult
 
     suspend fun deleteImage(publicId: String): Boolean

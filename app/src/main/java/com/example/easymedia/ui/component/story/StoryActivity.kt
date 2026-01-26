@@ -304,16 +304,18 @@ class StoryActivity : AppCompatActivity() {
     }
 
     private fun showPermissionRationaleDialog() {
-        MaterialAlertDialogBuilder(this, R.style.MyAlertDialogTheme)
-            .setTitle("Quyền thông báo")
-            .setMessage("Ứng dụng cần quyền thông báo để gửi thông thông tin Story")
-            .setPositiveButton("Cho phép") { _, _ ->
-                requestNotificationPermissionLauncher.launch(
-                    Manifest.permission.POST_NOTIFICATIONS
-                )
-            }
-            .setNegativeButton("Hủy", null)
-            .show()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            MaterialAlertDialogBuilder(this, R.style.MyAlertDialogTheme)
+                .setTitle("Quyền thông báo")
+                .setMessage("Ứng dụng cần quyền thông báo để gửi thông thông tin Story")
+                .setPositiveButton("Cho phép") { _, _ ->
+                    requestNotificationPermissionLauncher.launch(
+                        Manifest.permission.POST_NOTIFICATIONS
+                    )
+                }
+                .setNegativeButton("Hủy", null)
+                .show()
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")

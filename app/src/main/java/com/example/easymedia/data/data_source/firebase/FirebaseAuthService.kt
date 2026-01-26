@@ -43,8 +43,6 @@ class FirebaseAuthService(private val cloudinary: CloudinaryService) : AuthServi
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
-    // Tên người dùng đã tồn tại thì return false - ngược lại là false
-    // Cần có bảng usernames để truy vấn người dùng
     override suspend fun isUsernameAvailable(usernameLower: String): Boolean {
         val doc = db.collection("usernames").document(usernameLower).get().await()
         return !doc.exists()
@@ -115,7 +113,7 @@ class FirebaseAuthService(private val cloudinary: CloudinaryService) : AuthServi
         profilePicture: File?, // File local
         gender: String?
     ) {
-        withContext(Dispatchers.IO) { // đảm bảo I/O chạy trên thread nền
+        withContext(Dispatchers.IO) {
             val userRef = db.collection("users").document(uid)
             val updates = mutableMapOf<String, Any?>()
 
@@ -126,21 +124,16 @@ class FirebaseAuthService(private val cloudinary: CloudinaryService) : AuthServi
             updates["updated_at"] = FieldValue.serverTimestamp()
 
             if (profilePicture != null) {
-                // Lấy dữ liệu cũ (đồng bộ Firestore)
                 val currentData = userRef.get().await().data
                 val oldPublicId = currentData?.get("profile_picture_public_id") as? String
 
-                // Upload ảnh mới (I/O)
                 val uploadResult = cloudinary.uploadImage(profilePicture, folder = "profiles/$uid")
 
-                // Cập nhật đường dẫn ảnh mới
                 updates["profile_picture"] = uploadResult.secureUrl
                 updates["profile_picture_public_id"] = uploadResult.publicId
 
-                // Cập nhật Firestore
                 userRef.update(updates).await()
 
-                // Xóa ảnh cũ — KHÔNG chờ (song song)
                 if (!oldPublicId.isNullOrEmpty()) {
                     launch(Dispatchers.IO) {
                         try {
@@ -157,7 +150,6 @@ class FirebaseAuthService(private val cloudinary: CloudinaryService) : AuthServi
                     }
                 }
             } else {
-                // Không có ảnh mới → chỉ update thông tin text
                 userRef.update(updates).await()
             }
         }
@@ -179,7 +171,6 @@ class FirebaseAuthService(private val cloudinary: CloudinaryService) : AuthServi
         Log.d("FollowDebug", "addFollowing() called: currentUid=$currentUid, targetUid=$targetUid")
 
         if (currentUid == targetUid) {
-            Log.e("FollowDebug", "❌ Không thể tự follow chính mình!")
             return
         }
 
@@ -194,21 +185,21 @@ class FirebaseAuthService(private val cloudinary: CloudinaryService) : AuthServi
             batch.update(targetRef, "followers", FieldValue.arrayUnion(currentUid))
 
             batch.commit().await()
-
-            Log.d("FollowDebug", "✅ Follow thành công: $currentUid → $targetUid")
-
         } catch (e: Exception) {
-            Log.e("FollowDebug", "❌ Lỗi khi follow: ${e.message}", e)
+            Log.e("FollowDebug", "Lỗi khi follow: ${e.message}", e)
         }
     }
 
     override fun currentUid(): String? = auth.currentUser?.uid
 
     override suspend fun removeFollowing(currentUid: String, targetUid: String) {
-        Log.d("FollowDebug", "removeFollowing() called: currentUid=$currentUid, targetUid=$targetUid")
+        Log.d(
+            "FollowDebug",
+            "removeFollowing() called: currentUid=$currentUid, targetUid=$targetUid"
+        )
 
         if (currentUid == targetUid) {
-            Log.e("FollowDebug", "❌ Không thể tự unfollow chính mình!")
+            Log.e("FollowDebug", "Không thể tự unfollow chính mình!")
             return
         }
 
@@ -224,10 +215,10 @@ class FirebaseAuthService(private val cloudinary: CloudinaryService) : AuthServi
 
             batch.commit().await()
 
-            Log.d("FollowDebug", "✅ Unfollow thành công: $currentUid → $targetUid")
+            Log.d("FollowDebug", "Unfollow thành công: $currentUid → $targetUid")
 
         } catch (e: Exception) {
-            Log.e("FollowDebug", "❌ Lỗi khi unfollow: ${e.message}", e)
+            Log.e("FollowDebug", "Lỗi khi unfollow: ${e.message}", e)
         }
     }
 }

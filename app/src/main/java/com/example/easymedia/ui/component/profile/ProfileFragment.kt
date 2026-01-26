@@ -34,7 +34,6 @@ class ProfileFragment : Fragment() {
     private lateinit var postAdapter: ProfileAdapter
     val currentUserId = SharedPrefer.getId()
 
-    // Repository
     private val authRepository =
         AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
 

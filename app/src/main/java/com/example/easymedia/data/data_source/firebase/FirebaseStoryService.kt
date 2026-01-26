@@ -65,10 +65,6 @@ class FirebaseStoryService(
                     image = image
                 )
             }
-
-            // ✅ Log toàn bộ danh sách
-            Log.d("FirebaseStoryService", "Fetched musics: $musics")
-
             musics
         } catch (e: Exception) {
             e.printStackTrace()
@@ -78,9 +74,6 @@ class FirebaseStoryService(
 
     override suspend fun uploadStory(story: Story, imageFile: File, isVideo: Boolean): Boolean {
         return try {
-            Log.d("FirebaseStoryService", "Uploading story image to Cloudinary...")
-            // 1️⃣ Upload ảnh lên Cloudinary
-            // nếu mà là Video
             var result: CloudinaryUploadResult? = null
             if (isVideo) {
                 result = cloudinary.uploadVideo(imageFile, folder = "stories")
@@ -90,11 +83,9 @@ class FirebaseStoryService(
                 Log.d("FirebaseStoryService", "Uploaded to Cloudinary: ${result.secureUrl}")
             }
 
-            // 2️⃣ Tạo document reference Firestore (ID tự sinh)
             val docRef = db.collection("stories").document()
 
-            // 3️⃣ Tạo map dữ liệu + convert Music sang Map
-            val storyMap = mutableMapOf<String, Any>(
+            val storyMap = mutableMapOf(
                 "user_id" to story.userId,
                 "image_url" to result.secureUrl,
                 "expire_at" to Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000),
@@ -113,9 +104,7 @@ class FirebaseStoryService(
                 )
             }
 
-            // 4️⃣ Ghi dữ liệu 1 lần
             docRef.set(storyMap).await()
-
             Log.d("FirebaseStoryService", "Story uploaded successfully with ID: ${docRef.id}")
             true
         } catch (e: Exception) {
@@ -132,7 +121,7 @@ class FirebaseStoryService(
                 .orderBy(
                     FieldPath.documentId(),
                     Query.Direction.DESCENDING
-                ) // tránh trùng createdAt
+                )
                 .get()
                 .await()
 
@@ -171,49 +160,42 @@ class FirebaseStoryService(
     override suspend fun deleteStory(storyId: String): Boolean {
         val tag = "DeleteStory"
         return try {
-            Log.d(tag, "🔥 deleteStory() CALLED with id = $storyId")
-
             val docRef = db.collection("stories").document(storyId)
             val snapshot = docRef.get().await()
 
             if (!snapshot.exists()) {
-                Log.e(tag, "❌ Story not found")
                 return false
             }
 
             val imageUrl = snapshot.getString("image_url") ?: ""
-            Log.d(tag, "👉 Story imageUrl = $imageUrl")
 
             if (imageUrl.isEmpty()) {
-                Log.e(tag, "❌ Story has no imageUrl → Cannot delete Cloudinary")
+                Log.e(tag, "Story has no imageUrl → Cannot delete Cloudinary")
             } else {
-                // 1️⃣ TÁCH PUBLIC ID
                 val publicId = extractPublicId(imageUrl)
-                Log.d(tag, "👉 Extracted publicId = $publicId")
+                Log.d(tag, "Extracted publicId = $publicId")
 
                 if (publicId != null) {
-                    // 2️⃣ KIỂM TRA LÀ VIDEO HAY ẢNH
                     val isVideo = isVideoUrl(imageUrl)
 
                     if (isVideo) {
-                        Log.d(tag, "🎬 Detected VIDEO → Deleting Cloudinary video")
+                        Log.d(tag, "Detected VIDEO → Deleting Cloudinary video")
                         cloudinary.deleteVideo(publicId)
                     } else {
-                        Log.d(tag, "🖼 Detected IMAGE → Deleting Cloudinary image")
+                        Log.d(tag, "Detected IMAGE → Deleting Cloudinary image")
                         cloudinary.deleteImage(publicId)
                     }
                 } else {
-                    Log.e(tag, "❌ Failed to extract publicId → Skip Cloudinary delete")
+                    Log.e(tag, "Failed to extract publicId → Skip Cloudinary delete")
                 }
             }
 
-            // 3️⃣ XOÁ FIRESTORE DOCUMENT
             docRef.delete().await()
-            Log.d(tag, "✅ Story deleted successfully")
+            Log.d(tag, "Story deleted successfully")
 
             true
         } catch (e: Exception) {
-            Log.e(tag, "❌ Failed to delete story → ${e.message}", e)
+            Log.e(tag, "Failed to delete story → ${e.message}", e)
             false
         }
     }
@@ -238,7 +220,6 @@ class FirebaseStoryService(
         Log.d("FirebaseStoryService", "Fetching stories for user: $userId")
 
         return try {
-            // 🔹 Query chuẩn: lọc theo user_id + sắp xếp theo created_at (DESC)
             val snapshot = db.collection("stories")
                 .whereEqualTo("user_id", userId)
                 .orderBy("created_at", Query.Direction.DESCENDING)
@@ -259,8 +240,6 @@ class FirebaseStoryService(
                 "Ordered fetch failed for user $userId → fallback: ${e.message}",
                 e
             )
-
-            // 🔹 Fallback: chỉ where + tự sort theo createdAt
             return try {
                 val snapshot = db.collection("stories")
                     .whereEqualTo("user_id", userId)
@@ -270,7 +249,6 @@ class FirebaseStoryService(
                 snapshot.documents.mapNotNull { doc ->
                     doc.toObject(Story::class.java)?.copy(id = doc.id)
                 }
-                    // 🔥 Tự sort để đảm bảo UI vẫn đúng
                     .sortedByDescending { it.createdAt }
 
             } catch (inner: Exception) {

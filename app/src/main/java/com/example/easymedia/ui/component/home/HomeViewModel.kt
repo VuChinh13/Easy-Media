@@ -105,7 +105,6 @@ class HomeViewModel : ViewModel() {
                     currentPosts.addAll(newPosts)
                     lastVisible = lastDoc
 
-                    // 👉 CHỈ post danh sách mới vừa load
                     _posts.postValue(newPosts to "")
                 } else {
                     isLastPage = true
