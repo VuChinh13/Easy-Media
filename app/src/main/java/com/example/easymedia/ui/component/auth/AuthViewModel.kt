@@ -1,24 +1,25 @@
 package com.example.easymedia.ui.component.auth
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.easymedia.R
 import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
 import com.example.easymedia.data.data_source.firebase.FirebaseAuthService
+import com.example.easymedia.data.repository.AuthError
 import com.example.easymedia.data.repository.AuthRepository
 import com.example.easymedia.data.repository.AuthRepositoryImpl
-import com.example.easymedia.data.repository.AuthError
-import com.example.easymedia.ui.utils.SharedPrefer
+import com.example.easymedia.utils.SharedPrefer
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
     private val repo: AuthRepository = AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
 ) : ViewModel() {
 
-    private val _loginResult = MutableLiveData<Pair<Boolean, String>>()
-    val loginResult: LiveData<Pair<Boolean, String>> = _loginResult
+    private val _loginResult = MutableSharedFlow<LoginEvent>()
+    val loginResult = _loginResult.asSharedFlow()
 
     fun login(email: String, password: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -38,15 +39,18 @@ class AuthViewModel(
                         user?.profilePicture
                     )
                 }
-                // it = uid (nếu service trả về uid)
-                _loginResult.postValue(true to "Đăng nhập thành công")
+                _loginResult.emit(LoginEvent.Success)
             }.onFailure { e ->
-                val message = when (e) {
-                    is AuthError.Firebase -> e.message ?: "Đăng nhập thất bại, vui lòng thử lại"
-                    else -> e.message ?: "Đăng nhập thất bại, vui lòng kiểm tra lại thông tin"
+                when (e) {
+                    is AuthError.Firebase -> _loginResult.emit(LoginEvent.Error(true))
+                    else -> _loginResult.emit(LoginEvent.Error(false))
                 }
-                _loginResult.postValue(false to message)
             }
         }
     }
+}
+
+sealed class LoginEvent {
+    object Success : LoginEvent()
+    data class Error(val isErrorFirebase: Boolean) : LoginEvent()
 }

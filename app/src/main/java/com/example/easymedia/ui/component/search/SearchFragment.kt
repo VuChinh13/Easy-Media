@@ -22,8 +22,8 @@ import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.profile.ProfileFragment
 import com.example.easymedia.ui.component.search.adapter.HistoryAdapter
 import com.example.easymedia.ui.component.search.adapter.SearchAutoCompleteAdapter
-import com.example.easymedia.ui.utils.IntentExtras
-import com.example.easymedia.ui.utils.SharedPrefer
+import com.example.easymedia.utils.IntentExtras
+import com.example.easymedia.utils.SharedPrefer
 
 class SearchFragment : Fragment() {
     private lateinit var binding: FragmentSearchBinding

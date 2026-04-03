@@ -16,11 +16,7 @@ class LikeAdapter(
     private val onDismissCallback: () -> Unit,
     private val listener: OnAvatarClickListener?
 ) : RecyclerView.Adapter<LikeAdapter.LikeViewHolder>() {
-
-    // Danh sách này sẽ được dùng để hiển thị lên màn hình
     private var filteredList: MutableList<User> = originalListUser.toMutableList()
-
-    // Bỏ biến selectedPosition nếu không dùng để highlight item (trong code cũ bạn có khai báo nhưng không dùng logic highlight)
     private var selectedPosition: Int = RecyclerView.NO_POSITION
 
     class LikeViewHolder(val binding: ItemLikeBottomSheetBinding) :

@@ -1,4 +1,3 @@
-// file: AutocompleteAdapter.kt
 package com.example.easymedia.ui.component.map
 
 import android.annotation.SuppressLint
@@ -8,8 +7,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.easymedia.R
-import com.tomtom.sdk.search.model.result.AutocompleteResult
-
 
 class AutocompleteAdapter(
     private var items: List<DisplayItem> = emptyList(),
@@ -40,7 +37,6 @@ class AutocompleteAdapter(
         val displayText = when(item) {
             is DisplayItem.History -> item.item.address
             is DisplayItem.Suggestion -> {
-                // Build queryText từ segments
                 val segments = item.result.segments.mapNotNull { segment ->
                     when(segment) {
                         is com.tomtom.sdk.search.model.result.AutocompleteSegmentPlainText -> segment.plainText.trim().takeIf { it.isNotEmpty() }

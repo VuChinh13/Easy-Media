@@ -1,4 +1,4 @@
-package com.example.easymedia.ui.utils
+package com.example.easymedia.utils
 
 /*
  * Định nghĩa các hằng số dùng cho Intent

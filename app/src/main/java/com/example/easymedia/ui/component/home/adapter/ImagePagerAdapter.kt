@@ -22,10 +22,8 @@ class ImagePagerAdapter(private val images: List<String>) :
     }
 
     override fun onBindViewHolder(holder: ImageViewHolder, position: Int) {
-        with(holder) {
-            Glide.with(holder.imageView.context).load(images[position])
-                .into(holder.imageView)
-        }
+        Glide.with(holder.imageView.context).load(images[position])
+            .into(holder.imageView)
     }
 
     override fun getItemCount(): Int = images.size

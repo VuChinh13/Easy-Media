@@ -39,8 +39,6 @@ class MusicAdapter(
         Glide.with(holder.itemView.context).load(music.image).error(R.drawable.ic_music_default)
             .into(holder.binding.ivMusic)
 
-
-        // 👇 Đổi màu nền nếu là item được chọn
         if (position == selectedPosition) {
             holder.itemView.setBackgroundColor("#292E34".toColorInt())
         } else {
@@ -48,16 +46,10 @@ class MusicAdapter(
         }
 
         holder.itemView.setOnClickListener {
-            // Cập nhật vị trí được chọn
             val previousPosition = selectedPosition
             selectedPosition = holder.adapterPosition
-
-            // tắt nhạc đi luôn
             isMuted()
-            // Gọi callback phát nhạc
             onItemClick.invoke(music)
-
-            // Cập nhật lại item cũ và mới để refresh màu nền
             if (previousPosition != RecyclerView.NO_POSITION)
                 notifyItemChanged(previousPosition)
             notifyItemChanged(selectedPosition)

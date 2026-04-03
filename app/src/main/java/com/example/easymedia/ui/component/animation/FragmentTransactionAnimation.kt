@@ -1,10 +1,10 @@
 package com.example.easymedia.ui.component.animation;
 
 import androidx.fragment.app.FragmentTransaction;
-/*
-    Lớp này dùng để định nghĩa những hiệu ứng khi mà chuyển màn Fragment
-    đây là 1 hàm extension cho lớp mà đã có sẵn rồi
- */
+/**
+ * This class is used to define transition effects when switching between Fragments.
+ * This is an extension function for an existing class.
+*/
 object FragmentTransactionAnimation {
     fun FragmentTransaction.setSlideAnimations(): FragmentTransaction {
         return this.setCustomAnimations(

@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
+import com.example.easymedia.R
 import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
 import com.example.easymedia.data.data_source.firebase.FirebasePostService
 import com.example.easymedia.data.model.Comment
@@ -21,7 +22,7 @@ import com.example.easymedia.data.repository.PostRepositoryImpl
 import com.example.easymedia.databinding.CommentBottomsheetBinding
 import com.example.easymedia.ui.component.comment.adapter.CommentAdapter
 import com.example.easymedia.ui.component.home.OnAvatarClickListener
-import com.example.easymedia.ui.utils.SharedPrefer
+import com.example.easymedia.utils.SharedPrefer
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -31,7 +32,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.collections.isNotEmpty
 
-// bên trong lớp này thì nhận vào đó là danh sách các comment
 class CommentBottomSheet(
     private val postId: String,
     private val userId: String,
@@ -74,8 +74,6 @@ class CommentBottomSheet(
     @SuppressLint("NotifyDataSetChanged")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // Đây là nơi mà thực hiện Logic
-
         val profilePicture = SharedPrefer.getProfilePicture()
         Glide.with(view)
             .load(profilePicture)
@@ -85,11 +83,10 @@ class CommentBottomSheet(
 
         // Khởi tạo Adapter
         adapter = CommentAdapter(
-            listComment, postId, {
+            listComment, postId, requireContext(), {
                 reloadComments()
             }, {
-                // ⬅️ TRUYỀN DISMISS VÀO ĐÂY
-                dismiss()            // <<< BottomSheet tự đóng
+                dismiss()
             }, listener
         )
         binding.rvComments.layoutManager = LinearLayoutManager(context)
@@ -101,22 +98,18 @@ class CommentBottomSheet(
             result.onSuccess { list ->
                 listComment.addAll(list)
                 withContext(Dispatchers.Main) {
-                    // Kiểm tra xem là danh sách mà truyền vào bên trong có rỗng hay không
                     if (listComment.isNotEmpty()) {
                         hideEmptyComment()
-
                         adapter.notifyDataSetChanged()
                     } else {
-                        // Nếu mà trống thì làm gì đó
                         showEmptyComment()
                     }
                 }
             }.onFailure {
-                // khi mà lỗi thì làm gì đó
+                // Do Nothing
             }
         }
 
-        // Sự kiện khi mà nhấn đăng comment
         binding.etComment.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(
                 s: CharSequence?,
@@ -124,7 +117,6 @@ class CommentBottomSheet(
                 count: Int,
                 after: Int
             ) {
-                // Gọi trước khi mà thay đổi Text
             }
 
             override fun onTextChanged(
@@ -141,13 +133,11 @@ class CommentBottomSheet(
                 }
             }
 
-            override fun afterTextChanged(s: Editable?) {
-                // Gọi sau khi mà Text thay đổi xong
-            }
+            override fun afterTextChanged(s: Editable?) {}
         })
 
         binding.btnUpload.setOnClickListener {
-            Toast.makeText(context, "Đang tải bình luận", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.loading_comments), Toast.LENGTH_SHORT).show()
             CoroutineScope(Dispatchers.IO).launch {
                 val result =
                     repositoryPost.addComment(
@@ -157,14 +147,12 @@ class CommentBottomSheet(
                     )
                 result.onSuccess {
                     withContext(Dispatchers.Main) {
-                        // Cập nhật lại danh sách
                         CoroutineScope(Dispatchers.IO).launch {
                             val result = repositoryPost.getComments(postId)
                             result.onSuccess { list ->
                                 listComment.clear()
                                 listComment.addAll(list)
                                 withContext(Dispatchers.Main) {
-                                    // Kiểm tra xem là danh sách mà truyền vào bên trong có rỗng hay không
                                     if (listComment.isNotEmpty()) {
                                         binding.tvTitle1.visibility = View.INVISIBLE
                                         binding.tvTitle2.visibility = View.INVISIBLE
@@ -186,15 +174,12 @@ class CommentBottomSheet(
             val imm =
                 requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.hideSoftInputFromWindow(binding.etComment.windowToken, 0)
-
-            // Xóa nội dung EditText
             binding.etComment.text?.clear()
             binding.etComment.clearFocus()
             binding.btnUpload.visibility = View.INVISIBLE
         }
     }
 
-    // Dùng để mà xử lí tránh bị leak bộ nhớ
     override fun onDestroyView() {
         super.onDestroyView()
     }
@@ -208,7 +193,6 @@ class CommentBottomSheet(
                     listComment.clear()
                     listComment.addAll(list)
                     adapter.notifyDataSetChanged()
-                    // cập nhật lại số comment
                     totalComment--
 
                     // kiểm tra lại nếu mà số comment bằng 0 thì hiển thị Text
@@ -221,7 +205,11 @@ class CommentBottomSheet(
                 }
             }.onFailure {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Lỗi khi tải lại bình luận", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        getString(R.string.error_reload_comments),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }

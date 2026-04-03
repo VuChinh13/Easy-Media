@@ -1,4 +1,4 @@
-package com.example.easymedia.ui.utils
+package com.example.easymedia.utils
 
 import android.text.format.DateUtils
 import java.util.*

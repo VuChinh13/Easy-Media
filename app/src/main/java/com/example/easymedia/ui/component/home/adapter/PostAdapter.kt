@@ -28,18 +28,13 @@ import com.example.easymedia.databinding.ItemFirstPostBinding
 import com.example.easymedia.databinding.ItemPostBinding
 import com.example.easymedia.ui.component.comment.CommentBottomSheet
 import com.example.easymedia.ui.component.home.OnAvatarClickListener
-import com.example.easymedia.ui.utils.SharedPrefer
-import com.example.easymedia.ui.utils.TimeFormatter
+import com.example.easymedia.utils.SharedPrefer
+import com.example.easymedia.utils.TimeFormatter
 import com.example.easymedia.ui.component.like.LikeBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// Trong adapter có hoạt động like, xem comment , hiển thị số like và số comment
-// like : cần postID
-// ..........
-// Làm thêm sự kiện là khi mà nhấn vào ảnh thì xung quanh bị mở đi và có thể
-// chuyển qua lại các màn này đi xem
 class PostAdapter(
     var posts: MutableList<Post>,
     private val lifecycleCoroutineScope: LifecycleCoroutineScope,
@@ -106,13 +101,11 @@ class PostAdapter(
 
         } else if (holder is PostViewHolder) {
             val post = posts[position - 1]
-            // 1) Luôn set adapter & attach indicator NGAY, trước khi gọi API
             with(holder) {
                 showShimmner(holder)
                 viewPager.adapter = ImagePagerAdapter(post.imageUrls)
                 dotsIndicator.attachTo(viewPager)
 
-                // Ẩn chấm nếu chỉ có 1 ảnh (nhiều thư viện tự ẩn ta chủ động luôn)
                 dotsIndicator.visibility =
                     if (post.imageUrls.size > 1) View.VISIBLE else View.GONE
                 caption.text = post.caption
@@ -129,7 +122,6 @@ class PostAdapter(
                 }
             }
 
-            // Hiển thị những thông tin cần thiết lên
             lifecycleCoroutineScope.launch(Dispatchers.IO) {
                 val result = authRepository.getUserById(post.userId)
                 result.onSuccess { user ->
@@ -141,9 +133,7 @@ class PostAdapter(
                                 .apply(RequestOptions().diskCacheStrategy(DiskCacheStrategy.ALL))
                                 .error(R.drawable.ic_avatar)
                                 .into(imageAvatar)
-                            // sau khi mà load xong
                             hideShimmer(holder)
-                            // Khi mà thành
                             imageAvatar.setOnClickListener {
                                 listener.onAvatarClick(user)
                             }
@@ -159,7 +149,6 @@ class PostAdapter(
                 }
             }
 
-            // hiển thị tym đỏ
             lifecycleCoroutineScope.launch(Dispatchers.IO) {
                 val result = postRepository.hasUserLiked(post.id, userId)
                 result.onSuccess {
@@ -176,12 +165,10 @@ class PostAdapter(
                     }
                 }.onFailure {
                     withContext(Dispatchers.Main) {
-                        // Làm gì đó
                     }
                 }
             }
 
-            // Sự kiện Comment
             holder.btnComment.setOnClickListener {
                 val commentSheet =
                     CommentBottomSheet(
@@ -199,7 +186,6 @@ class PostAdapter(
                 )
             }
 
-            // Sự kiện Comment
             holder.tvTotalComment.setOnClickListener {
                 val commentSheet =
                     CommentBottomSheet(
@@ -217,10 +203,7 @@ class PostAdapter(
                 )
             }
 
-
-            // sự kiện hiển thị những người mà đã like
             holder.tvTotalLike.setOnClickListener {
-                // thực hiện ở đây
                 val likeSheet =
                     LikeBottomSheet(
                         post.id, listener
@@ -231,10 +214,8 @@ class PostAdapter(
                 )
             }
 
-            // sự kiện xem bản đồ
             holder.tvLocation.setOnClickListener {
-                Log.d("TestLocation", post.location.toString())
-                listener.swithScreenMapDetail(post.location!!, post)
+                listener.switchScreenMapDetail(post.location!!, post)
             }
         }
     }
@@ -248,11 +229,9 @@ class PostAdapter(
                 if (liked) R.drawable.ic_heart_red else R.drawable.ic_heart
             )
 
-            // Cập nhật số lượng like ngay lập tức
             post.counts.likes += if (liked) 1 else -1
             holder.tvTotalLike.text = post.counts.likes.toString()
 
-            // Gọi API theo trạng thái mới
             lifecycleCoroutineScope.launch(Dispatchers.IO) {
                 val result = if (liked) {
                     postRepository.likePost(post.id, userId)
@@ -273,7 +252,7 @@ class PostAdapter(
     fun updateData(newItems: List<Post>) {
         posts.clear()
         posts.addAll(newItems)
-        notifyDataSetChanged() // Gọi ở đây
+        notifyDataSetChanged()
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -282,8 +261,6 @@ class PostAdapter(
         val updatedList = posts.toMutableList()
         updatedList.addAll(newPosts)
         posts = updatedList
-
-        // Chỉ thông báo phần mới
         notifyItemRangeInserted(startPos + 1, newPosts.size)
     }
 
@@ -294,7 +271,7 @@ class PostAdapter(
     fun reloadTotalComment(position: Int, totalComment: Int) {
         if (position > 0 && position <= posts.size) {
             posts[position - 1].counts.comments = totalComment
-            notifyItemChanged(position) // chỉ reload item đó thôi
+            notifyItemChanged(position)
         }
     }
 

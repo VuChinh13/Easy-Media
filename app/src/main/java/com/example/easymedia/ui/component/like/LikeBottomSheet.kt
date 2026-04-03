@@ -31,7 +31,6 @@ class LikeBottomSheet(val idPost: String, val listener: OnAvatarClickListener?) 
         PostRepositoryImpl(
             FirebasePostService(cloudinary = CloudinaryServiceImpl())
         )
-
     private lateinit var adapter: LikeAdapter
     private lateinit var binding: LikeBottomSheetBinding
 
@@ -62,7 +61,10 @@ class LikeBottomSheet(val idPost: String, val listener: OnAvatarClickListener?) 
                 behavior.state = BottomSheetBehavior.STATE_EXPANDED
                 behavior.maxHeight = desiredHeight
             }
+        initView()
+    }
 
+    private fun initView() {
         val searchView = binding.btnSearchLike
         val searchEditText = searchView.findViewById<AutoCompleteTextView>(
             androidx.appcompat.R.id.search_src_text
@@ -72,11 +74,11 @@ class LikeBottomSheet(val idPost: String, val listener: OnAvatarClickListener?) 
         val searchIcon = searchView.findViewById<ImageView>(
             androidx.appcompat.R.id.search_mag_icon
         )
-        searchIcon.setColorFilter(Color.RED, PorterDuff.Mode.SRC_IN)  // đổi màu icon
+        searchIcon.setColorFilter(Color.RED, PorterDuff.Mode.SRC_IN)
         val closeButton = searchView.findViewById<ImageView>(
             androidx.appcompat.R.id.search_close_btn
         )
-        closeButton.setColorFilter(Color.RED, PorterDuff.Mode.SRC_IN)  // đổi màu
+        closeButton.setColorFilter(Color.RED, PorterDuff.Mode.SRC_IN)
         searchEditText.setHintTextColor(Color.LTGRAY)
     }
 
@@ -105,8 +107,6 @@ class LikeBottomSheet(val idPost: String, val listener: OnAvatarClickListener?) 
 
     private fun setupSearchView() {
         val searchView = binding.btnSearchLike
-
-        // Lắng nghe sự kiện gõ chữ trong SearchView
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 adapter.filter(query.orEmpty())

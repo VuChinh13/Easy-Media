@@ -17,4 +17,19 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_maps">MapsActivity</string>
+
+
+    <string name="dialog_add_content_and_image">Hãy thêm nội dung và ảnh để hoàn thiện bài viết</string>
+    <string name="dialog_share_post_success">Đã chia sẻ thành công bài viết</string>
+    <string name="dialog_error">Đã có lỗi xảy ra hãy kiểm tra lại</string>
+    <string name="email_error">Email không hợp lệ</string>
+    <string name="error_enter_password">Vui lòng nhập mật khẩu</string>
+    <string name="error_login_failed">Đăng nhập thất bại, vui lòng thử lại</string>
+    <string name="error_login_invalid_credentials">Đăng nhập thất bại, vui lòng kiểm tra lại thông tin</string>
+    <string name="confirm_delete_comment">Bạn muốn xóa bình luận này?</string>
+    <string name="action_delete">XÓA</string>
+    <string name="loading_comments">Đang tải bình luận</string>
+    <string name="error_reload_comments">Lỗi khi tải lại bình luận</string>
+    <string name="post_published_successfully">Tin của bạn đã được đăng thành công</string>
+    <string name="select_location_from_suggestions">Hãy chọn 1 địa điểm trong phần gợi ý</string>
 </resources>

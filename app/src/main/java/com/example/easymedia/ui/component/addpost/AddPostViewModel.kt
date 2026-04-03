@@ -1,8 +1,5 @@
 package com.example.easymedia.ui.component.addpost
 
-import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.easymedia.data.data_source.cloudinary.CloudinaryServiceImpl
@@ -11,6 +8,8 @@ import com.example.easymedia.data.model.Location
 import com.example.easymedia.data.repository.PostRepository
 import com.example.easymedia.data.repository.PostRepositoryImpl
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -18,11 +17,9 @@ import java.io.File
  * Tạo bài viết
  */
 class AddPostViewModel : ViewModel() {
-    private val repo: PostRepository =
-        PostRepositoryImpl(FirebasePostService(cloudinary = CloudinaryServiceImpl()))
-    private val _result = MutableLiveData<Pair<Boolean, String>>()
-    val result: LiveData<Pair<Boolean, String>> = _result
-
+    private val repo: PostRepository = PostRepositoryImpl(FirebasePostService(cloudinary = CloudinaryServiceImpl()))
+    private val _event = MutableSharedFlow<AddPostEvent>()
+    val event = _event.asSharedFlow()
     fun createPost(
         userId: String,
         caption: String,
@@ -32,11 +29,16 @@ class AddPostViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             val result = repo.createPostWithCloudinary(userId, caption, location, imageFiles)
             result.onSuccess {
-                _result.postValue(true to "")
+                _event.emit(AddPostEvent.Success)
             }.onFailure { e ->
-                Log.d("CheckLoi", e.toString())
-                _result.postValue(false to (e.message ?: "Đã có lỗi xảy ra"))
+                _event.emit(AddPostEvent.Error)
             }
         }
     }
+}
+
+
+sealed class AddPostEvent {
+    object Success : AddPostEvent()
+    object Error : AddPostEvent()
 }

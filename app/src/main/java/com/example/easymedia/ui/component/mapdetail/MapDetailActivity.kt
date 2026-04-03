@@ -17,7 +17,7 @@ import com.bumptech.glide.request.transition.Transition
 import com.example.easymedia.R
 import com.example.easymedia.data.model.Post
 import com.example.easymedia.databinding.ActivityMapDetailBinding
-import com.example.easymedia.ui.utils.IntentExtras
+import com.example.easymedia.utils.IntentExtras
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.map.display.TomTomMap
 import com.tomtom.sdk.map.display.camera.CameraOptions
@@ -43,20 +43,17 @@ class MapDetailActivity : AppCompatActivity(), MapReadyCallback {
         binding = ActivityMapDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Nhận dữ liệu Intent
         lat = intent.getDoubleExtra("lat", 0.0)
         lng = intent.getDoubleExtra("lng", 0.0)
         name = intent.getStringExtra("name") ?: ""
 
-        // Ưu tiên lấy ảnh từ Post nếu có
+
         val post = intent.getParcelableExtra<Post>(IntentExtras.EXTRA_USER)
         urlImage = post?.imageUrls?.firstOrNull() ?: intent.getStringExtra("image").orEmpty()
 
         Log.d("MapDetail", "URL Image: $urlImage")
-
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as MapFragment
         mapFragment.getMapAsync(this)
-
         binding.btnClose.setOnClickListener { finish() }
     }
 

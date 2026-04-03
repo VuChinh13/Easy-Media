@@ -2,96 +2,104 @@ package com.example.easymedia.ui.component.auth
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.util.Patterns
 import android.view.inputmethod.EditorInfo
-import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
+import com.example.easymedia.R
+import com.example.easymedia.base.BaseActivity
 import com.example.easymedia.databinding.ActivityAuthBinding
+import com.example.easymedia.extension.observe
+import com.example.easymedia.extension.showToast
 import com.example.easymedia.ui.component.main.MainActivity
 import com.example.easymedia.ui.component.signup.SignupActivity
 
-class AuthActivity : AppCompatActivity() {
+class AuthActivity : BaseActivity<ActivityAuthBinding, AuthViewModel>() {
+    override val viewModel: AuthViewModel by viewModels()
 
-    private lateinit var binding: ActivityAuthBinding
-    private val authViewModel: AuthViewModel by viewModels()
+    override fun inflateBinding(): ActivityAuthBinding {
+        return ActivityAuthBinding.inflate(layoutInflater)
+    }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityAuthBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
+    override fun initView(savedInstanceState: Bundle?) {
+        super.initView(savedInstanceState)
         setupUi()
+    }
+
+    override fun initData() {
+        super.initData()
         observeViewModel()
     }
 
     private fun setupUi() {
-        // Đăng ký
-        binding.btSignup.setOnClickListener {
-            startActivity(Intent(this, SignupActivity::class.java))
-        }
-
-        // Đăng nhập
-        binding.btLogin.setOnClickListener {
-            if (validateForm()) {
-                Log.d("Checklog", "dang goi")
-                authViewModel.login(
-                    email = binding.etEmail.text?.toString()?.trim().orEmpty(),
-                    password = binding.etPassword.text?.toString().orEmpty()
-                )
+        with(binding) {
+            btSignup.setOnClickListener {
+                startActivity(Intent(this@AuthActivity, SignupActivity::class.java))
             }
-        }
 
-        // Ấn Done trên bàn phím ở ô password -> submit
-        binding.etPassword.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                binding.btLogin.performClick()
-                true
-            } else false
-        }
+            btLogin.setOnClickListener {
+                if (validateForm()) {
+                    viewModel.login(
+                        email = etEmail.text?.toString()?.trim().orEmpty(),
+                        password = etPassword.text?.toString().orEmpty()
+                    )
+                }
+            }
 
-        // Clear error khi gõ lại
-        binding.etEmail.addTextChangedListener { binding.etEmail.error = null }
-        // Với TextInputLayout, set error ở layout
-        binding.etPassword.addTextChangedListener { binding.til.error = null }
+            etPassword.setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    btLogin.performClick()
+                    true
+                } else false
+            }
+
+            etEmail.addTextChangedListener { etEmail.error = null }
+            etPassword.addTextChangedListener { binding.til.error = null }
+        }
     }
 
     private fun observeViewModel() {
-        authViewModel.loginResult.observe(this) { result ->
-            val (ok, message) = result
-            if (ok) {
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-                startActivity(Intent(this, MainActivity::class.java))
-                finish()
-            } else {
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        viewModel.loginResult.observe(this) { result ->
+            when (result) {
+                is LoginEvent.Error -> {
+                    if (result.isErrorFirebase) {
+                        showToast(R.string.error_login_failed)
+                    } else showToast(R.string.error_login_invalid_credentials)
+                }
+
+                is LoginEvent.Success -> {
+                    showToast(R.string.login_success)
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finish()
+                }
+
             }
         }
     }
 
     /** Validate: email hợp lệ + password không rỗng */
     private fun validateForm(): Boolean {
-        val email = binding.etEmail.text?.toString()?.trim().orEmpty()
-        val pass = binding.etPassword.text?.toString().orEmpty()
+        with(binding) {
+            val email = etEmail.text?.toString()?.trim().orEmpty()
+            val pass = etPassword.text?.toString().orEmpty()
 
-        var check = true
+            var check = true
 
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            binding.etEmail.error = "Email không hợp lệ"
-            check = false
-        } else {
-            binding.etEmail.error = null
+            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                etEmail.error = getString(R.string.email_error)
+                check = false
+            } else {
+                etEmail.error = null
+            }
+
+            if (pass.isBlank()) {
+                til.error = getString(R.string.error_enter_password)
+                check = false
+            } else {
+                til.error = null
+            }
+
+            return check
         }
-
-        if (pass.isBlank()) {
-            binding.til.error = "Vui lòng nhập mật khẩu"
-            check = false
-        } else {
-            binding.til.error = null
-        }
-
-        return check
     }
 }

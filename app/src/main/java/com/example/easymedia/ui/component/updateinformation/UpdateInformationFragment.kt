@@ -19,8 +19,9 @@ import com.example.easymedia.data.repository.AuthRepository
 import com.example.easymedia.data.repository.AuthRepositoryImpl
 import com.example.easymedia.databinding.FragmentUpdateInformationBinding
 import com.example.easymedia.ui.component.main.MainActivity
-import com.example.easymedia.ui.utils.IntentExtras
-import com.example.easymedia.ui.utils.SharedPrefer
+import com.example.easymedia.utils.Files
+import com.example.easymedia.utils.IntentExtras
+import com.example.easymedia.utils.SharedPrefer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -110,7 +111,7 @@ class UpdateInformationFragment : Fragment() {
         binding.btSaveChanges.setOnClickListener {
             (activity as MainActivity).showLoading()
             val avatarFile = selectedImageUri?.let {
-                uriToFile(
+                Files.uriToFile(
                     requireContext(),
                     it
                 )
@@ -167,16 +168,3 @@ class UpdateInformationFragment : Fragment() {
         )
     }
 }
-
-private fun uriToFile(context: Context, uri: Uri): File {
-    val contentResolver = context.contentResolver
-    val inputStream = contentResolver.openInputStream(uri)
-    val fileName = "image_${System.currentTimeMillis()}.jpg"
-    val file = File(context.cacheDir, fileName)
-    val outputStream = FileOutputStream(file)
-    inputStream?.copyTo(outputStream)
-    inputStream?.close()
-    outputStream.close()
-    return file
-}
-

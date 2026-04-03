@@ -17,7 +17,6 @@ import com.example.easymedia.data.data_source.firebase.FirebaseAuthService
 import com.example.easymedia.data.model.User
 import com.example.easymedia.data.repository.AuthRepositoryImpl
 import com.example.easymedia.databinding.FollowerBottomSheetBinding
-import com.example.easymedia.databinding.FollowingBottomSheetBinding
 import com.example.easymedia.ui.component.follower.adapter.FollowerAdapter
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -61,7 +60,10 @@ class FollowerBottomSheet(
                 behavior.state = BottomSheetBehavior.STATE_EXPANDED
                 behavior.maxHeight = desiredHeight
             }
+        initView()
+    }
 
+    fun initView() {
         // Tùy chỉnh SearchView
         val searchView = binding.btnSearchLike
         val searchEditText =
@@ -78,17 +80,15 @@ class FollowerBottomSheet(
         closeButton.setColorFilter(Color.RED, PorterDuff.Mode.SRC_IN)
     }
 
+
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         adapter = FollowerAdapter(mutableListOf(), { dismiss() }, { user -> switchScreen(user) })
         binding.rcvMusic.layoutManager = LinearLayoutManager(context)
         binding.rcvMusic.adapter = adapter
 
-        // Fetch users song song
         fetchUsers()
-
-        // Setup search
         setupSearchView()
     }
 
@@ -132,6 +132,6 @@ class FollowerBottomSheet(
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-        fetchScope.cancel() // Hủy coroutine nếu bottom sheet bị đóng
+        fetchScope.cancel()
     }
 }

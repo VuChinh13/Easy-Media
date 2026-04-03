@@ -5,12 +5,13 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.easymedia.R
 import com.example.easymedia.databinding.ActivityMapStoryBinding
+import com.example.easymedia.extension.showToast
 import com.example.easymedia.ui.component.mapdetail.MapDetailActivity
-import com.example.easymedia.ui.utils.IntentExtras
+import com.example.easymedia.utils.IntentExtras
 import com.tomtom.quantity.Distance
 import com.tomtom.sdk.location.GeoPoint
 import com.tomtom.sdk.search.SearchCallback
@@ -40,7 +41,6 @@ class MapStoryActivity : AppCompatActivity() {
         binding.rvSuggestions.layoutManager = LinearLayoutManager(this)
         binding.rvSuggestions.adapter = adapter
 
-        // Load search API
         searchApi = OnlineSearch.create(
             context = this,
             apiKey = "h3ch6HjcPyPGwH2oV1pz7e3m0hlEPr8m"
@@ -58,7 +58,7 @@ class MapStoryActivity : AppCompatActivity() {
                 searchRunnable = Runnable {
                     val text = s?.toString() ?: ""
                     if (text.isNotEmpty()) callAutocomplete(text)
-                    else loadHistoryAndUpdateAdapter() // show history khi xóa text
+                    else loadHistoryAndUpdateAdapter()
                 }
                 searchHandler.postDelayed(searchRunnable!!, 500)
             }
@@ -66,11 +66,7 @@ class MapStoryActivity : AppCompatActivity() {
 
         binding.btnNext.setOnClickListener {
             if (location == null) {
-                Toast.makeText(
-                    this@MapStoryActivity,
-                    "Hãy chọn 1 địa điểm trong phần gợi ý",
-                    Toast.LENGTH_SHORT
-                ).show()
+                showToast(R.string.select_location_from_suggestions)
             }
             location?.let {
                 val resultIntent = Intent().apply {
@@ -113,7 +109,6 @@ class MapStoryActivity : AppCompatActivity() {
     private fun handleItemClick(item: DisplayItem) {
         when (item) {
             is DisplayItem.History -> {
-                // Open MapDetail with history coords
                 val fullAddress = item.item.address
                 binding.etSearch.setText(fullAddress)
                 binding.etSearch.setSelection(fullAddress.length)
@@ -129,12 +124,10 @@ class MapStoryActivity : AppCompatActivity() {
                 intent.putExtra("name", item.item.address)
                 startActivity(intent)
 
-                // Move history to top
                 HistoryStore.addOrMoveToTop(this, item.item)
             }
 
             is DisplayItem.Suggestion -> {
-                // Convert suggestion to SearchOptions to get full lat/lng
                 val queryText = item.result.segments.joinToString(" ") { segment ->
                     when (segment) {
                         is com.tomtom.sdk.search.model.result.AutocompleteSegmentPlainText -> segment.plainText
@@ -166,7 +159,6 @@ class MapStoryActivity : AppCompatActivity() {
                         var fullAddress =
                             addr?.freeformAddress ?: firstResult.place.name
 
-                        // Loại bỏ postalCode (chuỗi toàn số, từ 3-6 chữ số)
                         fullAddress = fullAddress.split(",")
                             .map { it.trim() }
                             .filter { !it.matches(Regex("^\\d{3,6}$")) }
@@ -175,10 +167,9 @@ class MapStoryActivity : AppCompatActivity() {
 
                         location = com.example.easymedia.data.model.Location(lat, lng, fullAddress)
 
-                        // Open MapDetail
                         runOnUiThread {
                             binding.etSearch.setText(fullAddress)
-                            binding.etSearch.setSelection(fullAddress.length) // đặt con trỏ cuối text
+                            binding.etSearch.setSelection(fullAddress.length)
                             val intent =
                                 Intent(this@MapStoryActivity, MapDetailActivity::class.java)
                             intent.putExtra("lat", lat)
@@ -187,7 +178,6 @@ class MapStoryActivity : AppCompatActivity() {
                             startActivity(intent)
                         }
 
-                        // Save to history
                         val newHistory = HistoryItem(fullAddress, lat, lng)
                         HistoryStore.addOrMoveToTop(this@MapStoryActivity, newHistory)
                     }
@@ -197,8 +187,6 @@ class MapStoryActivity : AppCompatActivity() {
     }
 }
 
-
-// file: HistoryItem.kt (hoặc đặt trong cùng file nếu bạn muốn)
 data class HistoryItem(
     val address: String,
     val lat: Double,
@@ -206,7 +194,6 @@ data class HistoryItem(
     val timestamp: Long = System.currentTimeMillis()
 )
 
-// Wrapper để adapter có thể hiển thị cả suggestion và history
 sealed class DisplayItem {
     data class Suggestion(val result: com.tomtom.sdk.search.model.result.AutocompleteResult) :
         DisplayItem()

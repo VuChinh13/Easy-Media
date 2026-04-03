@@ -62,8 +62,8 @@ import com.example.easymedia.databinding.ActivityStoryBinding
 import com.example.easymedia.ui.component.music.MusicBottomSheet
 import com.example.easymedia.ui.component.story.service.ImageRenderService
 import com.example.easymedia.ui.component.story.service.VideoRenderService
-import com.example.easymedia.ui.utils.IntentExtras
-import com.example.easymedia.ui.utils.SharedPrefer
+import com.example.easymedia.utils.IntentExtras
+import com.example.easymedia.utils.SharedPrefer
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import gun0912.tedimagepicker.builder.TedImagePicker
 import gun0912.tedimagepicker.builder.type.MediaType

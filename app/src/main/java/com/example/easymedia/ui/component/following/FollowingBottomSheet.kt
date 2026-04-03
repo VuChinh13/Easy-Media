@@ -26,12 +26,10 @@ class FollowingBottomSheet(
     private val listId: List<String>,
     private val switchScreen: (User) -> Unit
 ) : BottomSheetDialogFragment() {
-
     private lateinit var binding: FollowingBottomSheetBinding
     private val repositoryAuth = AuthRepositoryImpl(FirebaseAuthService(CloudinaryServiceImpl()))
     private val listUser = mutableListOf<User>()
     private lateinit var adapter: FollowingAdapter
-
     private val fetchScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreateView(
@@ -45,7 +43,6 @@ class FollowingBottomSheet(
 
     override fun onStart() {
         super.onStart()
-        // Thiết lập chiều cao của BottomSheet
         val dialog = dialog as? BottomSheetDialog
         dialog?.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
             ?.let { sheet ->
@@ -60,8 +57,10 @@ class FollowingBottomSheet(
                 behavior.state = BottomSheetBehavior.STATE_EXPANDED
                 behavior.maxHeight = desiredHeight
             }
+        initView()
+    }
 
-        // Tùy chỉnh SearchView
+    private fun initView() {
         val searchView = binding.btnSearchLike
         val searchEditText =
             searchView.findViewById<AutoCompleteTextView>(androidx.appcompat.R.id.search_src_text)
@@ -79,29 +78,21 @@ class FollowingBottomSheet(
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         adapter = FollowingAdapter(mutableListOf(), { dismiss() }, { user -> switchScreen(user) })
         binding.rcvMusic.layoutManager = LinearLayoutManager(context)
         binding.rcvMusic.adapter = adapter
-
-        // Fetch users song song
         fetchUsers()
-
-        // Setup search
         setupSearchView()
     }
 
     private fun fetchUsers() {
         fetchScope.launch {
-            // Gọi getUserById song song
             val deferredList = listId.map { uid ->
                 async {
                     repositoryAuth.getUserById(uid).getOrNull()
                 }
             }
-
             val users = deferredList.awaitAll().filterNotNull()
-
             withContext(Dispatchers.Main) {
                 if (users.isNotEmpty()) {
                     listUser.clear()
@@ -131,6 +122,6 @@ class FollowingBottomSheet(
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-        fetchScope.cancel() // Hủy coroutine nếu bottom sheet bị đóng
+        fetchScope.cancel()
     }
 }

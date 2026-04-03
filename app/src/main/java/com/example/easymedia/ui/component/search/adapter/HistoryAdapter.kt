@@ -11,7 +11,7 @@ import com.example.easymedia.R
 import com.example.easymedia.data.model.User
 import com.example.easymedia.databinding.ItemSuggestionBinding
 import com.example.easymedia.ui.component.main.MainActivity
-import com.example.easymedia.ui.utils.SharedPrefer
+import com.example.easymedia.utils.SharedPrefer
 
 // Nhận vào bên trong đó là danh sách lịch sử tìm kiếm
 class HistoryAdapter(
